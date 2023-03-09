@@ -1,4 +1,8 @@
-import config, os, re, openai, sqlite3, webbrowser, sys, pprint, qdarktheme
+import os, shutil
+if not os.path.isfile("config.py"):
+    shutil.copy("config.default", "config.py")
+
+import config, re, openai, sqlite3, webbrowser, sys, pprint, qdarktheme
 from gtts import gTTS
 from pocketsphinx import LiveSpeech, get_model_path
 from datetime import datetime
