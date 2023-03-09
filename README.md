@@ -2,6 +2,8 @@
 
 Use Qt to develop a graphical user interface for use of ChatGPT API
 
+![Screenshot from 2023-03-09 10-52-48](https://user-images.githubusercontent.com/25262722/224003152-aebe59d0-82f1-46b9-9695-a0b5e7406102.png)
+
 # Background
 
 We have used Qt to develop [a gui for using ChatGPT for bible study with UniqueBible.app](https://github.com/eliranwong/UniqueBible/wiki/Bible-Chat-with-ChatGPT-API).  Here in this project, we modify the code to make it as a standalone application for general purpose.
