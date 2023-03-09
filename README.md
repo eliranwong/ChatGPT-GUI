@@ -34,7 +34,7 @@ With "ChatGPT-GUI", users can:
 
 * save conversations for offline use
 
-* search history for title or content
+* search history, based on title or content
 
 * edit and save conversations
 
