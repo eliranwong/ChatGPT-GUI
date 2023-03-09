@@ -32,6 +32,8 @@ With "ChatGPT-GUI", users can:
 
 * adjust number of choices in ChatGPT responses [How many chat completion choices to generate for each input message.]
 
+* adjust font size
+
 * save conversations for offline use
 
 * search history, based on title or content
@@ -41,6 +43,38 @@ With "ChatGPT-GUI", users can:
 * listen to text-to-speech audio as Bible Chat generates responses
 
 * enter message with voice
+
+# Download and Setup
+
+Run in terminal:
+
+> git clone https://github.com/eliranwong/ChatGPT-GUI.git
+
+> cd ChatGPT-GUI
+
+> python3 -m venv venv
+
+> source venv/bin/activate
+
+> pip3 install PySide6 openai pocketsphinx gtts pyqtdarktheme
+
+Alternatives to PySide6:
+
+"ChatGPT-GUI" supports either PySide6, PySide2 or PyQt5.  You may use PySide2 or PyQt5 instead of PySide6, run
+
+> pip3 install qtpy PySide2 PyQt5
+
+In config.py, change "qtLibrary" to either "pyside2" or "pyqt5", e.g.:
+
+> qtLibrary = 'pyside2'
+
+# Run
+
+Run in terminal:
+
+> cd ChatGPT-GUI
+
+> python3 ChatGPT-GUI.py
 
 # QuickStart
 
@@ -80,13 +114,27 @@ On the right, from top to bottom:
 
 - Choices - according to OpenAI documentation, choices means "How many chat completion choices to generate for each input message."
 
-- Audio checkbox - toggles audio plackback when a new response is loaded.  Users can select default language in "Settings"
+- Font - edit the font size of chat record list and content view
 
 - Editable checkbox - toggles to edit the content view or make it read-only
+
+- Audio checkbox - toggles audio plackback when a new response is loaded.  Users can select default language in "Settings"
 
 - "New" - open a new conversation
 
 - "Save" saves edited conversation.  Each conservation is automatically saved when a new response is loaded.  Users may edit and updated the content with this button.
+
+Application menu:
+
+* New - new chat
+
+* Save - save chat
+
+* Configure - open settings dialog
+
+* Toggle Dark Theme - toggle between dark and light theme
+
+* Exit - Exit the application
 
 # FAQ - Frequently Asked Questions
 
@@ -94,10 +142,14 @@ How to edit a record's title?
 
 > Edit the first line of a record to change its title.
 
-Where is the offline database, that "Bible Chat" works with, stored?
+Where is the offline database, that "ChatGPT-GUI" works with, stored?
 
-> "ChatGPT.db" in the same folder containing the "ChatGPT-GUI.py" file.  The database file is generated on first run of the application.
+> "ChatGPT.db" in the same folder containing the "ChatGPT-GUI.py" file.  This is a sqlite database file, generated on first run of the application.
 
 Can I change the context to make the conversation context to focus on a particular area in bible study?
 
 > Yes.  Click the "Settings" button to edit the chat context.  The default is empty.  Change it to the topic you want to focus in your conversations.  In our original "Bible Chat", we enter "about the bible" as the context.
+
+Can I change the language of the interface?
+
+> Yes, simply edit the 'thisTranslation' entry in file 'config.py'.
