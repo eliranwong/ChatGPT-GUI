@@ -305,6 +305,9 @@ class ChatGPTAPI(QWidget):
         result = dialog.exec() if config.qtLibrary == "pyside6" else dialog.exec_()
         if result == QDialog.Accepted:
             config.openaiApiKey = dialog.api_key()
+            if not openai.api_key:
+                openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
+                self.newData()
             config.openaiApiOrganization = dialog.org()
             config.chatGPTApiContext = dialog.context()
             config.chatGPTApiAudioLanguage = dialog.language()
