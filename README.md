@@ -2,7 +2,7 @@
 
 Use Qt to develop a standalone graphical user interface for use of ChatGPT API
 
-![Screenshot from 2023-03-09 10-52-48](https://user-images.githubusercontent.com/25262722/224003152-aebe59d0-82f1-46b9-9695-a0b5e7406102.png)
+![screenshot1](https://user-images.githubusercontent.com/25262722/224164603-22c4749d-e3ba-4dfc-814b-2ded0217e028.png)
 
 # Background
 
@@ -26,7 +26,7 @@ ChatGPT web version is available at: https://chat.openai.com/chat
 
 With "ChatGPT-GUI", users can:
 
-* start conversation with a particular context.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, asking "Who is David?" in our original "Bible Chat" get a response related to the bible.
+* start conversation with a particular context.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, in our screenshots we set "talk about English literature" as the chat context.  This tells ChatGPT to give related responses.
 
 * adjust temperature [What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.]
 
@@ -40,7 +40,7 @@ With "ChatGPT-GUI", users can:
 
 * edit and save conversations
 
-* listen to text-to-speech audio as Bible Chat generates responses
+* listen to text-to-speech audio as ChatGPT-GUI generates responses
 
 * enter message with voice
 
@@ -78,15 +78,15 @@ Run in terminal:
 
 # QuickStart
 
-![Screenshot from 2023-03-09 10-53-02](https://user-images.githubusercontent.com/25262722/224003093-81bd2652-0050-4bf4-9e57-47e2c81ac83a.png)
+![screenshot2](https://user-images.githubusercontent.com/25262722/224164608-fcee440a-8be3-4850-8869-415acc1ce869.png)
 
-1) Launch "Bible Chat" from plugins menu
+1) Launch ChatGPT-GUI by running "python3 ChatGPT-GUI"
 2) Click "Settings" to enter your own OpenAI API key
 3) Enter your message in message entry field and press Enter key, to start a conversation
 
 # Graphical User Interface
 
-The Bible Chat Window is separated into left and right areas, by a movable splitter.  Users can move the splitter to either end to hide one of them. 
+The ChatGPT-GUI Window is separated into left and right areas, by a movable splitter.  Users can move the splitter to either end to hide one of them. 
 
 On the Left, from top to bottom:
 
@@ -108,7 +108,7 @@ On the right, from top to bottom:
 
 * Control interface:
 
-- Settings - open "Settings" dialog, where you can enter OpenAI API key, orgnisation ID, conversation context, text-to-speech language.  In our original "Bible Chat" application, context is set to "about the bible" by default.  You may modify the context to get the conversations focused on a particular topic or context.
+- Settings - open "Settings" dialog, where you can enter OpenAI API key, orgnisation ID, conversation context, text-to-speech language.
 
 - Temperature - according to OpenAI documentation, temperature means "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic."
 
@@ -146,9 +146,9 @@ Where is the offline database, that "ChatGPT-GUI" works with, stored?
 
 > "ChatGPT.db" in the same folder containing the "ChatGPT-GUI.py" file.  This is a sqlite database file, generated on first run of the application.
 
-Can I change the context to make the conversation context to focus on a particular area in bible study?
+Can I change the context to make the conversation context to focus on a particular area?
 
-> Yes.  Click the "Settings" button to edit the chat context.  The default is empty.  Change it to the topic you want to focus in your conversations.  In our original "Bible Chat", we enter "about the bible" as the context.
+> Yes.  Click the "Settings" button to edit the chat context.  The default is empty.  Change it to the topic you want to focus in your conversations.
 
 Can I change the language of the interface?
 
