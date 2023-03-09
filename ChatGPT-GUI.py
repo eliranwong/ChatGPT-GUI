@@ -302,7 +302,7 @@ class ChatGPTAPI(QWidget):
 
     def showApiDialog(self):
         dialog = ApiDialog(self)
-        result = dialog.exec_()
+        result = dialog.exec() if config.qtLibrary == "pyside6" else dialog.exec_()
         if result == QDialog.Accepted:
             config.openaiApiKey = dialog.api_key()
             config.openaiApiOrganization = dialog.org()
