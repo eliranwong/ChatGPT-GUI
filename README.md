@@ -1,6 +1,6 @@
 # ChatGPT-GUI
 
-Use Qt to develop a graphical user interface for use of ChatGPT API
+Use Qt to develop a standalone graphical user interface for use of ChatGPT API
 
 ![Screenshot from 2023-03-09 10-52-48](https://user-images.githubusercontent.com/25262722/224003152-aebe59d0-82f1-46b9-9695-a0b5e7406102.png)
 
