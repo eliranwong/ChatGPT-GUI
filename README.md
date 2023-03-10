@@ -68,7 +68,7 @@ Install 'pocketsphinx' to support voice-typing [optional]:
 
 > pip3 install pocketsphinx
 
-Alternatives to PySide6:
+Alternatives to PySide6 [optional]:
 
 "ChatGPT-GUI" supports either PySide6, PySide2 or PyQt5.  You may use PySide2 or PyQt5 instead of PySide6, run
 
@@ -106,7 +106,7 @@ Install 'pocketsphinx' to support voice-typing [optional]:
 
 > pip3 install pocketsphinx
 
-Alternatives to PySide6:
+Alternatives to PySide6 [optional]:
 
 "ChatGPT-GUI" supports either PySide6, PySide2 or PyQt5.  You may use PySide2 or PyQt5 instead of PySide6, run
 
