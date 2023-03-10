@@ -1,21 +1,28 @@
-import os, shutil
+import os, shutil, platform, ctypes
+
+# set working directory
+thisFile = os.path.realpath(__file__)
+wd = os.path.dirname(thisFile)
+if os.getcwd() != wd:
+    os.chdir(wd)
 if not os.path.isfile("config.py"):
     shutil.copy("config.default", "config.py")
 
 import config, re, openai, sqlite3, webbrowser, sys, pprint, qdarktheme
+from shutil import copyfile
 from gtts import gTTS
 from pocketsphinx import LiveSpeech, get_model_path
 from datetime import datetime
 from util.Languages import Languages
-from util.Worker import ChatGPTResponse
+from util.Worker import ChatGPTResponse, OpenAIImage
 if config.qtLibrary == "pyside6":
     from PySide6.QtCore import Qt, QThread, Signal
-    from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction
-    from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon
+    from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 else:
     from qtpy.QtCore import Qt, QThread, Signal
-    from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication
-    from qtpy.QtWidgets import QApplication, QMainWindow, QAction, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon
+    from qtpy.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 
 
 class SpeechRecognitionThread(QThread):
@@ -189,12 +196,16 @@ class ChatGPTAPI(QWidget):
         self.progressBar.setRange(0, 0) # Set the progress bar to use an indeterminate progress indicator
         apiKeyButton = QPushButton(config.thisTranslation["settings"])
         sendButton = QPushButton(config.thisTranslation["send"])
+        self.apiModels = QComboBox()
+        self.apiModels.addItems([config.thisTranslation["chat"], config.thisTranslation["image"]])
+        self.apiModels.setCurrentIndex(0)
+        self.apiModel = 0
         newButton = QPushButton(config.thisTranslation["new"])
         saveButton = QPushButton(config.thisTranslation["save"])
         self.editableCheckbox = QCheckBox(config.thisTranslation["editable"])
         self.editableCheckbox.setCheckState(Qt.Unchecked)
-        self.audioCheckbox = QCheckBox(config.thisTranslation["audio"])
-        self.audioCheckbox.setCheckState(Qt.Checked if config.chatGPTApiAudio else Qt.Unchecked)
+        #self.audioCheckbox = QCheckBox(config.thisTranslation["audio"])
+        #self.audioCheckbox.setCheckState(Qt.Checked if config.chatGPTApiAudio else Qt.Unchecked)
         self.choiceNumber = QComboBox()
         self.choiceNumber.addItems([str(i) for i in range(1, 11)])
         self.choiceNumber.setCurrentIndex((config.chatGPTApiNoOfChoices - 1))
@@ -217,6 +228,7 @@ class ChatGPTAPI(QWidget):
         promptLayout.addWidget(self.userInput)
         promptLayout.addWidget(self.voiceCheckbox)
         promptLayout.addWidget(sendButton)
+        promptLayout.addWidget(self.apiModels)
         layout000Rt.addLayout(promptLayout)
         layout000Rt.addWidget(self.contentView)
         layout000Rt.addWidget(self.progressBar)
@@ -230,7 +242,7 @@ class ChatGPTAPI(QWidget):
         rtControlLayout.addWidget(fontLabel)
         rtControlLayout.addWidget(self.fontSize)
         rtControlLayout.addWidget(self.editableCheckbox)
-        rtControlLayout.addWidget(self.audioCheckbox)
+        #rtControlLayout.addWidget(self.audioCheckbox)
         rtButtonLayout = QHBoxLayout()
         rtButtonLayout.addWidget(newButton)
         rtButtonLayout.addWidget(saveButton)
@@ -266,10 +278,10 @@ class ChatGPTAPI(QWidget):
         layout000Lt.addWidget(helpButton)
         
         # Connections
-        self.userInput.returnPressed.connect(self.displayResponse)
+        self.userInput.returnPressed.connect(self.sendMessage)
         helpButton.clicked.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/blob/main/README.md"))
         apiKeyButton.clicked.connect(self.showApiDialog)
-        sendButton.clicked.connect(self.displayResponse)
+        sendButton.clicked.connect(self.sendMessage)
         saveButton.clicked.connect(self.saveData)
         newButton.clicked.connect(self.newData)
         searchTitleButton.clicked.connect(self.searchData)
@@ -280,9 +292,10 @@ class ChatGPTAPI(QWidget):
         clearAllButton.clicked.connect(self.clearData)
         removeButton.clicked.connect(self.removeData)
         self.editableCheckbox.stateChanged.connect(self.toggleEditable)
-        self.audioCheckbox.stateChanged.connect(self.toggleChatGPTApiAudio)
+        #self.audioCheckbox.stateChanged.connect(self.toggleChatGPTApiAudio)
         self.voiceCheckbox.stateChanged.connect(self.toggleVoiceTyping)
         self.choiceNumber.currentIndexChanged.connect(self.updateChoiceNumber)
+        self.apiModels.currentIndexChanged.connect(self.updateApiModel)
         self.fontSize.currentIndexChanged.connect(self.setFontSize)
         self.temperature.currentIndexChanged.connect(self.updateTemperature)
 
@@ -307,10 +320,13 @@ class ChatGPTAPI(QWidget):
             config.openaiApiKey = dialog.api_key()
             if not openai.api_key:
                 openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
-                self.newData()
             config.openaiApiOrganization = dialog.org()
             config.chatGPTApiContext = dialog.context()
             config.chatGPTApiAudioLanguage = dialog.language()
+            self.newData()
+
+    def updateApiModel(self, index):
+        self.apiModel = index
 
     def updateTemperature(self, index):
         config.chatGPTApiTemperature = float(index / 10)
@@ -330,7 +346,7 @@ class ChatGPTAPI(QWidget):
     def toggleChatGPTApiAudio(self, state):
         config.chatGPTApiAudio = state
         if not config.chatGPTApiAudio:
-            config.mainWindow.closeMediaPlayer()
+            self.closeMediaPlayer()
 
     def removeData(self):
         index = self.listView.selectedIndexes()
@@ -414,7 +430,25 @@ Follow the following steps:
         self.contentView.appendPlainText(f"\n{text}" if self.contentView.toPlainText() else text)
         self.contentView.setPlainText(re.sub("\n\n[\n]+?([^\n])", r"\n\n\1", self.contentView.toPlainText()))
 
-    def displayResponse(self):
+    def sendMessage(self):
+        if self.apiModel == 0:
+            self.getResponse()
+        else:
+            self.getImage()
+
+    def getImage(self):
+        userInput = self.userInput.text().strip()
+        if userInput:
+            self.userInput.setDisabled(True)
+            self.progressBar.show() # show progress bar
+            OpenAIImage(self).workOnGetResponse(userInput)
+
+    def displayImage(self, imageUrl):
+        webbrowser.open(imageUrl)
+        self.userInput.setEnabled(True)
+        self.progressBar.hide()
+
+    def getResponse(self):
         userInput = self.userInput.text().strip()
         if userInput:
             self.userInput.setDisabled(True)
@@ -459,7 +493,13 @@ Follow the following steps:
             except:
                 pass
         if audioFiles:
-            config.mainWindow.playAudioBibleFilePlayList(audioFiles)
+            self.playAudioBibleFilePlayList(audioFiles)
+    
+    def playAudioBibleFilePlayList(self, files):
+        pass
+
+    def closeMediaPlayer(self):
+        pass
 
 
 class MainWindow(QMainWindow):
@@ -498,13 +538,17 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.toggleTheme)
         file_menu.addAction(new_action)
 
+        new_action = QAction(config.thisTranslation["toggleSystemTray"], self)
+        new_action.triggered.connect(self.toggleSystemTray)
+        file_menu.addAction(new_action)
+
         file_menu.addSeparator()
 
         # Create a Exit action and add it to the File menu
         exit_action = QAction(config.thisTranslation["exit"], self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.setStatusTip(config.thisTranslation["exitTheApplication"])
-        exit_action.triggered.connect(self.close)
+        exit_action.triggered.connect(QGuiApplication.instance().quit)
         file_menu.addAction(exit_action)
 
         # set initial window size
@@ -512,23 +556,129 @@ class MainWindow(QMainWindow):
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
     
+    def toggleSystemTray(self):
+        config.enableSystemTray = not config.enableSystemTray
+        QMessageBox.information(self, "ChatGPT-GUI", "You need to restart this application to make the changes effective.")
+
     def toggleTheme(self):
         config.darkTheme = not config.darkTheme
         qdarktheme.setup_theme() if config.darkTheme else qdarktheme.setup_theme("light")
 
+    # Work with system tray
+    def isWayland(self):
+        if platform.system() == "Linux" and not os.getenv('QT_QPA_PLATFORM') is None and os.getenv('QT_QPA_PLATFORM') == "wayland":
+            return True
+        else:
+            return False
+
+    def bringToForeground(self, window):
+        if window and not (window.isVisible() and window.isActiveWindow()):
+            window.raise_()
+            # Method activateWindow() does not work with qt.qpa.wayland
+            # platform.system() == "Linux" and not os.getenv('QT_QPA_PLATFORM') is None and os.getenv('QT_QPA_PLATFORM') == "wayland"
+            # The error message is received when QT_QPA_PLATFORM=wayland:
+            # qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+            # Therefore, we use hide and show methods instead with wayland.
+            if window.isVisible() and not window.isActiveWindow():
+                window.hide()
+            window.show()
+            if not self.isWayland():
+                window.activateWindow()
+
+
 if __name__ == '__main__':
+    def showMainWindow():
+        if not hasattr(config, "mainWindow") or config.mainWindow is None:
+            config.mainWindow = MainWindow()
+            qdarktheme.setup_theme() if config.darkTheme else qdarktheme.setup_theme("light")
+        else:
+            config.mainWindow.bringToForeground(config.mainWindow)
+
     def aboutToQuit():
         with open("config.py", "w", encoding="utf-8") as fileObj:
             for name in dir(config):
-                if not name.startswith("__"):
+                if not name.startswith("__") and not name == "mainWindow":
                     try:
                         value = eval(f"config.{name}")
                         fileObj.write("{0} = {1}\n".format(name, pprint.pformat(value)))
                     except:
                         pass
+
+    # Windows icon
+    if platform.system() == "Windows":
+        myappid = "chatgpt.gui"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        windowsIconPath = os.path.abspath(os.path.join(sys.path[0], "icons", "ChatGPT-GUI.ico"))
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(windowsIconPath)
+    # app
     qdarktheme.enable_hi_dpi()
     app = QApplication(sys.argv)
-    qdarktheme.setup_theme() if config.darkTheme else qdarktheme.setup_theme("light")
-    main_window = MainWindow()
+    iconPath = os.path.abspath(os.path.join(sys.path[0], "icons", "ChatGPT-GUI.png"))
+    appIcon = QIcon(iconPath)
+    app.setWindowIcon(appIcon)
+    showMainWindow()
+    # connection
     app.aboutToQuit.connect(aboutToQuit)
+
+    # Additional shortcuts on Linux
+    if platform.system() == "Linux":
+        def desktopFileContent():
+            iconPath = os.path.join(wd, "icons", "ChatGPT-GUI.png")
+            return """#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Path={0}
+Exec={1} {2}
+Icon={3}
+Name=ChatGPT GUI
+""".format(wd, sys.executable, thisFile, iconPath)
+
+        ubaLinuxDesktopFile = os.path.join(wd, "ChatGPT-GUI.desktop")
+        if not os.path.exists(ubaLinuxDesktopFile):
+            # Create .desktop shortcut
+            with open(ubaLinuxDesktopFile, "w") as fileObj:
+                fileObj.write(desktopFileContent())
+            try:
+                # Try to copy the newly created .desktop file to:
+                from pathlib import Path
+                # ~/.local/share/applications
+                userAppDir = os.path.join(str(Path.home()), ".local", "share", "applications")
+                userAppDirShortcut = os.path.join(userAppDir, "ChatGPT-GUI.desktop")
+                if not os.path.exists(userAppDirShortcut):
+                    Path(userAppDir).mkdir(parents=True, exist_ok=True)
+                    copyfile(ubaLinuxDesktopFile, userAppDirShortcut)
+                # ~/Desktop
+                homeDir = os.environ["HOME"]
+                desktopPath = f"{homeDir}/Desktop"
+                desktopPathShortcut = os.path.join(desktopPath, "ChatGPT-GUI.desktop")
+                if os.path.exists(desktopPath) and not os.path.exists(desktopPathShortcut):
+                    copyfile(ubaLinuxDesktopFile, desktopPathShortcut)
+            except:
+                pass
+
+    # system tray
+    if config.enableSystemTray:
+        app.setQuitOnLastWindowClosed(False)
+        # Set up tray icon
+        tray = QSystemTrayIcon()
+        tray.setIcon(appIcon)
+        tray.setToolTip("ChatGPT-GUI")
+        tray.setVisible(True)
+        # Import system tray menu
+        trayMenu = QMenu()
+        showMainWindowAction = QAction(config.thisTranslation["show"])
+        showMainWindowAction.triggered.connect(showMainWindow)
+        trayMenu.addAction(showMainWindowAction)
+        # Add a separator
+        trayMenu.addSeparator()
+        # Quit
+        quitAppAction = QAction(config.thisTranslation["exit"])
+        quitAppAction.triggered.connect(app.quit)
+        trayMenu.addAction(quitAppAction)
+        tray.setContextMenu(trayMenu)
+
+    # run the app
     sys.exit(app.exec() if config.qtLibrary == "pyside6" else app.exec_())

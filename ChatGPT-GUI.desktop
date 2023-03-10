@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Path=/home/eliran/ChatGPT-GUI
+Exec=/home/eliran/ChatGPT-GUI/venv/bin/python3 /home/eliran/ChatGPT-GUI/ChatGPT-GUI.py
+Icon=/home/eliran/ChatGPT-GUI/icons/ChatGPT-GUI.png
+Name=ChatGPT GUI

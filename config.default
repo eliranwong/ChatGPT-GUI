@@ -4,6 +4,7 @@ chatGPTApiContext = 'Talk about English Literature'
 chatGPTApiNoOfChoices = 1
 chatGPTApiTemperature = 1.0
 darkTheme = True
+enableSystemTray = False
 fontSize = 14
 openaiApiKey = ''
 openaiApiOrganization = ''
@@ -24,6 +25,7 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'font': 'Font',
  'fontSize': 'Font Size',
  'help': 'Help',
+ 'image': 'Image',
  'language': 'Language',
  'messageHere': 'Enter your message here ...',
  'new': 'New',
@@ -37,7 +39,9 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'searchTitleHere': 'Search title here ...',
  'send': 'Send',
  'settings': 'Settings',
+ 'show': 'Show',
  'temperature': 'Temperature',
  'toggleDarkTheme': 'Toggle Dark Theme',
+ 'toggleSystemTray': 'Toggle System Tray',
  'voice': 'voice',
  'voiceTyping': 'voice typing'}

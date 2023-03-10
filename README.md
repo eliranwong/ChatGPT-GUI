@@ -2,11 +2,17 @@
 
 Use Qt to develop a standalone graphical user interface for use of ChatGPT API
 
-![screenshot1](https://user-images.githubusercontent.com/25262722/224164603-22c4749d-e3ba-4dfc-814b-2ded0217e028.png)
+![screenshot1](https://user-images.githubusercontent.com/25262722/224390511-540f1ca0-2f76-4f83-9332-02aba5cb5b3c.png)
 
 # Background
 
 We have used Qt to develop [a gui for using ChatGPT for bible study with UniqueBible.app](https://github.com/eliranwong/UniqueBible/wiki/Bible-Chat-with-ChatGPT-API).  Here in this project, we modify the code to make it as a standalone application for general purpose.
+
+# Cross-platform
+
+Winodws, macOS, Linux, ChromeOS are supported.
+
+You may also run on Android via Termux.
 
 # ChatGPT API
 
@@ -40,9 +46,9 @@ With "ChatGPT-GUI", users can:
 
 * edit and save conversations
 
-* listen to text-to-speech audio as ChatGPT-GUI generates responses
-
 * enter message with voice
+
+* use OpenAI image model to generate images
 
 # Download and Setup
 
@@ -74,6 +80,8 @@ Run in terminal:
 
 > cd ChatGPT-GUI
 
+> source venv/bin/activate
+
 > python3 ChatGPT-GUI.py
 
 # QuickStart
@@ -104,6 +112,8 @@ On the right, from top to bottom:
 
 * message input - users enter a message here to begin or continue a conversation.  The voice checkbox toggle voice-typing.  The send button sends the message.  Alternately, users can press the "Enter" key after text entry.  When a message is sent, a progress bar is displayed to indicate that the message is being processed.
 
+* chat or image - this determines whether the message to sent to generate a chat response or an image.
+
 * content view - display conversation content
 
 * Control interface:
@@ -117,8 +127,6 @@ On the right, from top to bottom:
 - Font - edit the font size of chat record list and content view
 
 - Editable checkbox - toggles to edit the content view or make it read-only
-
-- Audio checkbox - toggles audio plackback when a new response is loaded.  Users can select default language in "Settings"
 
 - "New" - open a new conversation
 
