@@ -11,7 +11,12 @@ if not os.path.isfile("config.py"):
 import config, re, openai, sqlite3, webbrowser, sys, pprint, qdarktheme
 from shutil import copyfile
 from gtts import gTTS
-from pocketsphinx import LiveSpeech, get_model_path
+try:
+    from pocketsphinx import LiveSpeech, get_model_path
+    isPocketsphinxInstalled = True
+except:
+    isPocketsphinxInstalled = False
+
 from datetime import datetime
 from util.Languages import Languages
 from util.Worker import ChatGPTResponse, OpenAIImage
@@ -226,7 +231,8 @@ class ChatGPTAPI(QWidget):
         fontLabel.setToolTip(config.thisTranslation["fontSize"])
         promptLayout = QHBoxLayout()
         promptLayout.addWidget(self.userInput)
-        promptLayout.addWidget(self.voiceCheckbox)
+        if isPocketsphinxInstalled:
+            promptLayout.addWidget(self.voiceCheckbox)
         promptLayout.addWidget(sendButton)
         promptLayout.addWidget(self.apiModels)
         layout000Rt.addLayout(promptLayout)
