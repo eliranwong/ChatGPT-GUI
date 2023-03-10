@@ -50,7 +50,7 @@ With "ChatGPT-GUI", users can:
 
 * use OpenAI image model to generate images
 
-# Download and Setup
+# Download and Setup (Windows)
 
 Run in terminal:
 
@@ -58,11 +58,15 @@ Run in terminal:
 
 > cd ChatGPT-GUI
 
-> python3 -m venv venv
+> python -m venv venv
 
-> source venv/bin/activate
+> .\venv\Scripts\activate
 
-> pip3 install PySide6 openai pocketsphinx gtts pyqtdarktheme
+> pip3 install PySide6 openai gtts pyqtdarktheme
+
+Install 'pocketsphinx' to support voice-typing [optional]:
+
+> pip3 install pocketsphinx
 
 Alternatives to PySide6:
 
@@ -74,7 +78,45 @@ In config.py, change "qtLibrary" to either "pyside2" or "pyqt5", e.g.:
 
 > qtLibrary = 'pyside2'
 
-# Run
+# Run (Windows)
+
+Run in terminal:
+
+> cd ChatGPT-GUI
+
+> .\venv\Scripts\activate
+
+> python ChatGPT-GUI.py
+
+# Download and Setup (macOS, Linux, ChromeOS)
+
+Run in terminal:
+
+> git clone https://github.com/eliranwong/ChatGPT-GUI.git
+
+> cd ChatGPT-GUI
+
+> python3 -m venv venv
+
+> source venv/bin/activate
+
+> pip3 install PySide6 openai gtts pyqtdarktheme
+
+Install 'pocketsphinx' to support voice-typing [optional]:
+
+> pip3 install pocketsphinx
+
+Alternatives to PySide6:
+
+"ChatGPT-GUI" supports either PySide6, PySide2 or PyQt5.  You may use PySide2 or PyQt5 instead of PySide6, run
+
+> pip3 install qtpy PySide2 PyQt5
+
+In config.py, change "qtLibrary" to either "pyside2" or "pyqt5", e.g.:
+
+> qtLibrary = 'pyside2'
+
+# Run (macOS, Linux, ChromeOS)
 
 Run in terminal:
 
