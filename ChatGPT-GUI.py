@@ -1,4 +1,4 @@
-import os, shutil, platform, ctypes
+import os, shutil, platform, ctypes, glob
 
 # set working directory
 thisFile = os.path.realpath(__file__)
@@ -21,12 +21,14 @@ from datetime import datetime
 from util.Languages import Languages
 from util.Worker import ChatGPTResponse, OpenAIImage
 if config.qtLibrary == "pyside6":
+    from PySide6.QtPrintSupport import QPrinter, QPrintDialog
     from PySide6.QtCore import Qt, QThread, Signal
-    from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon
+    from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon, QFontMetrics, QTextDocument
     from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 else:
+    from qtpy.QtPrintSupport import QPrinter, QPrintDialog
     from qtpy.QtCore import Qt, QThread, Signal
-    from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon
+    from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon, QFontMetrics, QTextDocument
     from qtpy.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 
 
@@ -158,6 +160,8 @@ class ChatGPTAPI(QWidget):
         self.setWindowTitle("ChatGPT-GUI")
         # set variables
         self.setupVariables()
+        # run plugins
+        self.runPlugins()
         # setup interface
         self.setupUI()
         # load database
@@ -192,6 +196,8 @@ class ChatGPTAPI(QWidget):
         self.userInput.setPlaceholderText(config.thisTranslation["messageHere"])
         self.userInput.mousePressEvent = lambda _ : self.userInput.selectAll()
         self.userInput.setClearButtonEnabled(True)
+        self.userInputMultiline = QPlainTextEdit()
+        self.userInputMultiline.setPlaceholderText(config.thisTranslation["messageHere"])
         self.voiceCheckbox = QCheckBox(config.thisTranslation["voice"])
         self.voiceCheckbox.setToolTip(config.thisTranslation["voiceTyping"])
         self.voiceCheckbox.setCheckState(Qt.Unchecked)
@@ -200,6 +206,12 @@ class ChatGPTAPI(QWidget):
         self.progressBar = QProgressBar()
         self.progressBar.setRange(0, 0) # Set the progress bar to use an indeterminate progress indicator
         apiKeyButton = QPushButton(config.thisTranslation["settings"])
+        self.multilineButton = QPushButton("+")
+        font_metrics = QFontMetrics(self.multilineButton.font())
+        text_rect = font_metrics.boundingRect(self.multilineButton.text())
+        button_width = text_rect.width() + 20
+        button_height = text_rect.height() + 10
+        self.multilineButton.setFixedSize(button_width, button_height)
         sendButton = QPushButton(config.thisTranslation["send"])
         self.apiModels = QComboBox()
         self.apiModels.addItems([config.thisTranslation["chat"], config.thisTranslation["image"]])
@@ -230,9 +242,14 @@ class ChatGPTAPI(QWidget):
         fontLabel.setAlignment(Qt.AlignRight)
         fontLabel.setToolTip(config.thisTranslation["fontSize"])
         promptLayout = QHBoxLayout()
-        promptLayout.addWidget(self.userInput)
+        userInputLayout = QVBoxLayout()
+        userInputLayout.addWidget(self.userInput)
+        userInputLayout.addWidget(self.userInputMultiline)
+        self.userInputMultiline.hide()
+        promptLayout.addLayout(userInputLayout)
         if isPocketsphinxInstalled:
             promptLayout.addWidget(self.voiceCheckbox)
+        promptLayout.addWidget(self.multilineButton)
         promptLayout.addWidget(sendButton)
         promptLayout.addWidget(self.apiModels)
         layout000Rt.addLayout(promptLayout)
@@ -287,6 +304,7 @@ class ChatGPTAPI(QWidget):
         self.userInput.returnPressed.connect(self.sendMessage)
         helpButton.clicked.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/blob/main/README.md"))
         apiKeyButton.clicked.connect(self.showApiDialog)
+        self.multilineButton.clicked.connect(self.multilineButtonClicked)
         sendButton.clicked.connect(self.sendMessage)
         saveButton.clicked.connect(self.saveData)
         newButton.clicked.connect(self.newData)
@@ -306,6 +324,18 @@ class ChatGPTAPI(QWidget):
         self.temperature.currentIndexChanged.connect(self.updateTemperature)
 
         self.setFontSize()
+
+    def multilineButtonClicked(self):
+        if self.userInput.isVisible():
+            self.userInput.hide()
+            self.userInputMultiline.setPlainText(self.userInput.text())
+            self.userInputMultiline.show()
+            self.multilineButton.setText("-")
+        else:
+            self.userInputMultiline.hide()
+            self.userInput.setText(self.userInputMultiline.toPlainText())
+            self.userInput.show()
+            self.multilineButton.setText("+")
 
     def setFontSize(self, index=None):
         if index is not None:
@@ -412,12 +442,25 @@ Follow the following steps:
 1) Register and get your OpenAI Key at https://platform.openai.com/account/api-keys
 2) Click the "Settings" button below and enter your own OpenAI API key""")
         self.resetMessages()
+        self.userInput.setFocus()
 
     def selectData(self, index):
         data = index.data(Qt.UserRole)
         self.contentID = data[0]
         content = data[2]
         self.resetContent(content)
+        self.userInput.setFocus()
+
+    def printData(self):
+        # Get the printer and print dialog
+        printer = QPrinter()
+        dialog = QPrintDialog(printer, self)
+
+        # If the user clicked "OK" in the print dialog, print the text
+        if dialog.exec() == QPrintDialog.Accepted:
+            document = QTextDocument()
+            document.setPlainText(self.contentView.toPlainText())
+            document.print_(printer)
 
     def resetContent(self, content):
         self.contentView.setPlainText(content)
@@ -437,6 +480,8 @@ Follow the following steps:
         self.contentView.setPlainText(re.sub("\n\n[\n]+?([^\n])", r"\n\n\1", self.contentView.toPlainText()))
 
     def sendMessage(self):
+        if self.userInputMultiline.isVisible():
+            self.multilineButtonClicked()
         if self.apiModel == 0:
             self.getResponse()
         else:
@@ -466,11 +511,38 @@ Follow the following steps:
             self.messages.append({"role": "user", "content": userInput}) # update messages
             ChatGPTResponse(self).workOnGetResponse(self.messages) # get chatGPT response in a separate thread
 
+    def fileNamesWithoutExtension(self, dir, ext):
+        files = glob.glob(os.path.join(dir, "*.{0}".format(ext)))
+        return sorted([file[len(dir)+1:-(len(ext)+1)] for file in files if os.path.isfile(file)])
+
+    def execPythonFile(self, script):
+        if config.developer:
+            with open(script, 'r', encoding='utf8') as f:
+                code = compile(f.read(), script, 'exec')
+                exec(code, globals())
+        else:
+            try:
+                with open(script, 'r', encoding='utf8') as f:
+                    code = compile(f.read(), script, 'exec')
+                    exec(code, globals())
+            except:
+                print("Failed to run '{0}'!".format(os.path.basename(script)))
+
+    def runPlugins(self):
+        config.chatGPTTransformers = []
+        pluginFolder = os.path.join(os.getcwd(), "plugins")
+        for plugin in self.fileNamesWithoutExtension(pluginFolder, "py"):
+            script = os.path.join(pluginFolder, "{0}.py".format(plugin))
+            self.execPythonFile(script)
+
     def processResponse(self, responses):
         # reload the working content in case users change it during waiting for response
         self.contentID = self.currentLoadingID
         self.resetContent(self.currentLoadingContent)
         self.currentLoadingID = self.currentLoadingContent = ""
+        # transform responses
+        for t in config.chatGPTTransformers:
+            responses = t(responses)
         # update new reponses
         self.print(responses)
         # scroll to the bottom
@@ -485,6 +557,7 @@ Follow the following steps:
         # hide progress bar
         self.userInput.setEnabled(True)
         self.progressBar.hide()
+        self.userInput.setFocus()
 
     def playAudio(self, responses):
         textList = [i.replace(">>>", "").strip() for i in responses.split("\n") if i.strip()]
@@ -532,6 +605,13 @@ class MainWindow(QMainWindow):
         new_action = QAction(config.thisTranslation["save"], self)
         new_action.setShortcut("Ctrl+S")
         new_action.triggered.connect(self.chatGPT.saveData)
+        file_menu.addAction(new_action)
+
+        file_menu.addSeparator()
+
+        new_action = QAction(config.thisTranslation["print"], self)
+        new_action.setShortcut("Ctrl+P")
+        new_action.triggered.connect(self.chatGPT.printData)
         file_menu.addAction(new_action)
 
         file_menu.addSeparator()
@@ -603,7 +683,7 @@ if __name__ == '__main__':
     def aboutToQuit():
         with open("config.py", "w", encoding="utf-8") as fileObj:
             for name in dir(config):
-                if not name.startswith("__") and not name == "mainWindow":
+                if not name.startswith("__") and not name in ("mainWindow", "chatGPTTransformers"):
                     try:
                         value = eval(f"config.{name}")
                         fileObj.write("{0} = {1}\n".format(name, pprint.pformat(value)))

@@ -1,9 +1,10 @@
 chatGPTApiAudio = 0
 chatGPTApiAudioLanguage = 'en'
-chatGPTApiContext = 'Talk about English Literature'
+chatGPTApiContext = ''
 chatGPTApiNoOfChoices = 1
 chatGPTApiTemperature = 1.0
 darkTheme = True
+developer = False
 enableSystemTray = False
 fontSize = 14
 openaiApiKey = ''
@@ -30,6 +31,7 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'messageHere': 'Enter your message here ...',
  'new': 'New',
  'optional': 'optional',
+ 'print': 'Print',
  'remove': 'Remove',
  'required': 'required',
  'save': 'Save',

@@ -32,6 +32,8 @@ ChatGPT web version is available at: https://chat.openai.com/chat
 
 With "ChatGPT-GUI", users can:
 
+* enter message in multiline-input
+
 * start conversation with a particular context.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, in our screenshots we set "talk about English literature" as the chat context.  This tells ChatGPT to give related responses.
 
 * adjust temperature [What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.]
@@ -39,6 +41,8 @@ With "ChatGPT-GUI", users can:
 * adjust number of choices in ChatGPT responses [How many chat completion choices to generate for each input message.]
 
 * adjust font size
+
+* use python plugins to process ChatGPT responses before they are displayed
 
 * save conversations for offline use
 
@@ -203,3 +207,22 @@ Can I change the context to make the conversation context to focus on a particul
 Can I change the language of the interface?
 
 > Yes, simply edit the 'thisTranslation' entry in file 'config.py'.
+
+How to use python plugins to process ChatGPT responses before they are displayed?
+
+1) Create a python file and save it in folder "plugins".
+
+2) In the python file, append the method that transform the response to config.chatGPTTransformers
+
+For example, ChatGPT is weak to produce responses in traditional Chinese.  The following plugin convert all simplified Chinese into traditional Chinese characters:
+
+> import config<br>
+> # brew/apt install opencc<br>
+> # pip3 install opencc-python-reimplemented<br>
+> from opencc import OpenCC<br>
+> <br>
+> def convertToTraditionalChinese(text):<br>
+>     cc = OpenCC('s2t')<br>
+>     return cc.convert(text)<br>
+> <br>
+> config.chatGPTTransformers.append(convertToTraditionalChinese)<br>

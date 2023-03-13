@@ -4,3 +4,4 @@
 config.py
 ChatGPT.db
 UniqueBibleApp.desktop
+/plugins/*.py
