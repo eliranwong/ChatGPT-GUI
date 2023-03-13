@@ -217,8 +217,6 @@ How to use python plugins to process ChatGPT responses before they are displayed
 For example, ChatGPT is weak to produce responses in traditional Chinese.  The following plugin convert all simplified Chinese into traditional Chinese characters:
 
 > import config<br>
-> """brew/apt install opencc<br>
-> pip3 install opencc-python-reimplemented"""<br>
 > from opencc import OpenCC<br>
 > <br>
 > def convertToTraditionalChinese(text):<br>
