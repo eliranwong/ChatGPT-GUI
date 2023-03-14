@@ -24,12 +24,12 @@ if config.qtLibrary == "pyside6":
     from PySide6.QtPrintSupport import QPrinter, QPrintDialog
     from PySide6.QtCore import Qt, QThread, Signal
     from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon, QFontMetrics, QTextDocument
-    from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 else:
     from qtpy.QtPrintSupport import QPrinter, QPrintDialog
     from qtpy.QtCore import Qt, QThread, Signal
     from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon, QFontMetrics, QTextDocument
-    from qtpy.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from qtpy.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 
 
 class SpeechRecognitionThread(QThread):
@@ -70,6 +70,8 @@ class ApiDialog(QDialog):
 
         self.apiKeyEdit = QLineEdit(config.openaiApiKey)
         self.orgEdit = QLineEdit(config.openaiApiOrganization)
+        self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
+        self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
         self.languageBox = QComboBox()
         initialIndex = 0
@@ -93,6 +95,7 @@ class ApiDialog(QDialog):
         optional = config.thisTranslation["optional"]
         layout.addRow(f"OpenAI API Key [{required}]:", self.apiKeyEdit)
         layout.addRow(f"Organization ID [{optional}]:", self.orgEdit)
+        layout.addRow(f"Max Token [{required}]:", self.maxTokenEdit)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
         layout.addRow(f"{language} [{optional}]:", self.languageBox)
         layout.addWidget(buttonBox)
@@ -114,8 +117,10 @@ class ApiDialog(QDialog):
 
 
 class Database:
-    def __init__(self):
-        self.connection = sqlite3.connect("ChatGPT.db")
+    def __init__(self, filePath=""):
+        defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(config.chatGPTApiLastChatDatabase) else os.path.join("chats", "default.chat")
+        self.filePath = filePath if filePath else defaultFilePath
+        self.connection = sqlite3.connect(self.filePath)
         self.cursor = self.connection.cursor()
         self.cursor.execute('CREATE TABLE IF NOT EXISTS data (id TEXT PRIMARY KEY, title TEXT, content TEXT)')
         self.connection.commit()
@@ -169,9 +174,62 @@ class ChatGPTAPI(QWidget):
         # new entry at launch
         self.newData()
 
+    def openDatabase(self):
+        # Show a file dialog to get the file path to open
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(config.marvelData, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+
+        # If the user selects a file path, open the file
+        self.database = Database(filePath)
+        self.loadData()
+        self.updateTitle(filePath)
+
+    def newDatabase(self, copyExistingDatabase=False):
+        # Show a file dialog to get the file path to save
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        filePath, _ = QFileDialog.getSaveFileName(self, "New Database", os.path.join(config.marvelData, "chats", self.database.filePath if copyExistingDatabase else "new.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+
+        # If the user selects a file path, save the file
+        if filePath:
+            # make sure the file ends with ".chat"
+            if not filePath.endswith(".chat"):
+                filePath += ".chat"
+            # ignore if copy currently opened database
+            if copyExistingDatabase and os.path.abspath(filePath) == os.path.abspath(self.database.filePath):
+                return
+            # Check if the file already exists
+            if os.path.exists(filePath):
+                # Ask the user if they want to replace the existing file
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle("Confirm overwrite")
+                msgBox.setText(f"The file {filePath} already exists. Do you want to replace it?")
+                msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                msgBox.setDefaultButton(QMessageBox.No)
+                if msgBox.exec() == QMessageBox.No:
+                    return
+                else:
+                    os.remove(filePath)
+
+            # create a new database
+            if copyExistingDatabase:
+                shutil.copy(self.database.filePath, filePath)
+            self.database = Database(filePath)
+            self.loadData()
+            self.updateTitle(filePath)
+
+    def updateTitle(self, filePath=""):
+        if not filePath:
+            filePath = self.database.filePath
+        config.chatGPTApiLastChatDatabase = filePath
+        basename = os.path.basename(filePath)
+        self.parent.setWindowTitle(f"ChatGPT-GUI - {basename}")
+
     def setupVariables(self):
         self.contentID = ""
         self.database = Database()
+        self.updateTitle()
         self.data_list = []
         self.recognitionThread = SpeechRecognitionThread(self)
         self.recognitionThread.phrase_recognized.connect(self.onPhraseRecognized)
@@ -357,6 +415,10 @@ class ChatGPTAPI(QWidget):
             if not openai.api_key:
                 openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
             config.openaiApiOrganization = dialog.org()
+            try:
+                config.chatGPTApiMaxTokens = int(dialog.max_token())
+            except:
+                pass
             config.chatGPTApiContext = dialog.context()
             config.chatGPTApiAudioLanguage = dialog.language()
             self.newData()
@@ -597,19 +659,36 @@ class MainWindow(QMainWindow):
         # Create a File menu and add it to the menu bar
         file_menu = menubar.addMenu(config.thisTranslation["chat"])
 
-        new_action = QAction(config.thisTranslation["new"], self)
+        new_action = QAction(config.thisTranslation["openDatabase"], self)
+        new_action.setShortcut("Ctrl+Shift+O")
+        new_action.triggered.connect(self.chatGPT.openDatabase)
+        file_menu.addAction(new_action)
+
+        new_action = QAction(config.thisTranslation["newDatabase"], self)
+        new_action.setShortcut("Ctrl+Shift+N")
+        new_action.triggered.connect(self.chatGPT.newDatabase)
+        file_menu.addAction(new_action)
+
+        new_action = QAction(config.thisTranslation["saveDatabaseAs"], self)
+        new_action.setShortcut("Ctrl+Shift+S")
+        new_action.triggered.connect(lambda: self.chatGPT.newDatabase(copyExistingDatabase=True))
+        file_menu.addAction(new_action)
+
+        file_menu.addSeparator()
+
+        new_action = QAction(config.thisTranslation["newChat"], self)
         new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self.chatGPT.newData)
         file_menu.addAction(new_action)
 
-        new_action = QAction(config.thisTranslation["save"], self)
+        new_action = QAction(config.thisTranslation["saveChat"], self)
         new_action.setShortcut("Ctrl+S")
         new_action.triggered.connect(self.chatGPT.saveData)
         file_menu.addAction(new_action)
 
         file_menu.addSeparator()
 
-        new_action = QAction(config.thisTranslation["print"], self)
+        new_action = QAction(config.thisTranslation["printChat"], self)
         new_action.setShortcut("Ctrl+P")
         new_action.triggered.connect(self.chatGPT.printData)
         file_menu.addAction(new_action)
@@ -638,7 +717,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(exit_action)
 
         # set initial window size
-        self.setWindowTitle("ChatGPT-GUI")
+        #self.setWindowTitle("ChatGPT-GUI")
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
     

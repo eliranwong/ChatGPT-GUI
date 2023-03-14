@@ -1,6 +1,8 @@
 chatGPTApiAudio = 0
 chatGPTApiAudioLanguage = 'en'
 chatGPTApiContext = ''
+chatGPTApiLastChatDatabase = ''
+chatGPTApiMaxTokens = 1024
 chatGPTApiNoOfChoices = 1
 chatGPTApiTemperature = 1.0
 darkTheme = True
@@ -46,4 +48,11 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'toggleDarkTheme': 'Toggle Dark Theme',
  'toggleSystemTray': 'Toggle System Tray',
  'voice': 'voice',
- 'voiceTyping': 'voice typing'}
+ 'voiceTyping': 'voice typing',
+ 'newDatabase': 'New Database',
+ 'openDatabase': 'Open Database',
+ 'saveDatabaseAs': 'Save Database as ...',
+ 'newChat': 'New Chat',
+ 'saveChat': 'Save Chat',
+ 'printChat': 'Print Chat',
+}
