@@ -52,6 +52,8 @@ With "ChatGPT-GUI", users can:
 
 * edit and save conversations
 
+* search and replace chat content
+
 * support multiple database files for storing offline records; it helps users to organize different topics/categories/studies in separate files.
 
 * enter message with voice
@@ -169,6 +171,8 @@ On the right, from top to bottom:
 * chat or image - this determines whether the message to sent to generate a chat response or an image.
 
 * content view - display conversation content
+
+* Search and Replace - update content with search and replace
 
 * Control interface:
 

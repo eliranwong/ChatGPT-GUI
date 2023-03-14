@@ -55,4 +55,7 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'newChat': 'New Chat',
  'saveChat': 'Save Chat',
  'printChat': 'Print Chat',
+ 'replace': 'Replace',
+ 'replaceWith': 'Replace with',
+ 'searchFor': 'Search for',
 }
