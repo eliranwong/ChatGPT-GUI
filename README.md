@@ -2,6 +2,8 @@
 
 Use Qt to develop a standalone graphical user interface for use of ChatGPT API
 
+Developer: Eliran Wong
+
 ![screenshot1](https://user-images.githubusercontent.com/25262722/224390511-540f1ca0-2f76-4f83-9332-02aba5cb5b3c.png)
 
 # Background
@@ -50,9 +52,13 @@ With "ChatGPT-GUI", users can:
 
 * edit and save conversations
 
+* support multiple database files for storing offline records; it helps users to organize different topics/categories/studies in separate files.
+
 * enter message with voice
 
 * use OpenAI image model to generate images
+
+* support system tray
 
 # Download and Setup (Windows)
 
@@ -158,6 +164,8 @@ On the right, from top to bottom:
 
 * message input - users enter a message here to begin or continue a conversation.  The voice checkbox toggle voice-typing.  The send button sends the message.  Alternately, users can press the "Enter" key after text entry.  When a message is sent, a progress bar is displayed to indicate that the message is being processed.
 
+* \+ / - button - toggle multiline user input for message entry
+
 * chat or image - this determines whether the message to sent to generate a chat response or an image.
 
 * content view - display conversation content
@@ -180,13 +188,23 @@ On the right, from top to bottom:
 
 Application menu:
 
-* New - new chat
+* New Database - create a new database file
 
-* Save - save chat
+* Open Database - open an existing database file
+
+* Save Database as - duplicate the currently opened database a different file
+
+* New Chat - create a new chat
+
+* Save Chat - save chat content
+
+* Print Chat - print chat content
 
 * Configure - open settings dialog
 
 * Toggle Dark Theme - toggle between dark and light theme
+
+* Toggle System Tray - toggle system tray; restart the application is required
 
 * Exit - Exit the application
 
@@ -196,9 +214,13 @@ How to edit a record's title?
 
 > Edit the first line of a record to change its title.
 
-Where is the offline database, that "ChatGPT-GUI" works with, stored?
+Where are database files stored?
 
-> "ChatGPT.db" in the same folder containing the "ChatGPT-GUI.py" file.  This is a sqlite database file, generated on first run of the application.
+> Chat database file is stored in folder "chats" by default.  The default file is named as "default.chat"
+
+What is the format of the database files?
+
+> We use ".chat" as extension for database files to work with the GUI.  They are all standard sqlite files.
 
 Can I change the context to make the conversation context to focus on a particular area?
 
@@ -210,9 +232,28 @@ Can I change the language of the interface?
 
 How to use python plugins to process ChatGPT responses before they are displayed?
 
-1) Create a python file and save it in folder "plugins".
+Create a python file and save it in folder "plugins".
 
-2) In the python file, append the method that transform the response to config.chatGPTTransformers
+For example, print response on console in addition to displayint it on GUI:
+> import config<br>
+> <br>
+> def printOnConsole(text):<br>
+>     print(text)
+>     return text<br>
+> <br>
+> config.chatGPTTransformers.append(printOnConsole)<br>
+
+You may even modify the content before it is displayed on the GUI.
+
+In the python file, append the method that transform the response to config.chatGPTTransformers
+
+For example, change all characters to upper cases:
+> import config<br>
+> <br>
+> def convertToUpperCases(text):<br>
+>     return text.upper()<br>
+> <br>
+> config.chatGPTTransformers.append(convertToUpperCases)<br>
 
 For example, ChatGPT is weak to produce responses in traditional Chinese.  The following plugin convert all simplified Chinese into traditional Chinese characters:
 
