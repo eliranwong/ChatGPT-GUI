@@ -826,21 +826,10 @@ if __name__ == '__main__':
     if thisOS == "Darwin":
         shortcut_file = os.path.expanduser(f"~/Desktop/{appName}.command")
         if not os.path.isfile(shortcut_file):
-            icon_path = os.path.abspath(os.path.join("icons", f"{appName}.icns"))
             with open(shortcut_file, "w") as f:
                 f.write("#!/bin/bash\n")
                 f.write(f"cd {wd}\n")
                 f.write(f"{sys.executable} {thisFile} gui\n")
-            commands = (
-                f"pbcopy < {icon_path}",
-                f"sips -i {icon_path}",
-                f"DeRez -only icns {icon_path} > tmpicns.rsrc",
-                f"Rez -append tmpicns.rsrc -o iconfile.icns",
-                f"SetFile -a C {shortcut_file}",
-                f"SetFile -a C iconfile.icns",
-            )
-            for command in commands:
-                os.system(command)
             os.chmod(shortcut_file, 0o755)
     # additional shortcuts on Linux
     elif thisOS == "Linux":
