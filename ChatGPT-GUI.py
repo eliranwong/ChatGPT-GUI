@@ -794,24 +794,56 @@ if __name__ == '__main__':
                     except:
                         pass
 
+    thisOS = platform.system()
+    appName = "ChatGPT-GUI"
     # Windows icon
-    if platform.system() == "Windows":
+    if thisOS == "Windows":
         myappid = "chatgpt.gui"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        windowsIconPath = os.path.abspath(os.path.join(sys.path[0], "icons", "ChatGPT-GUI.ico"))
+        windowsIconPath = os.path.abspath(os.path.join(sys.path[0], "icons", f"{appName}.ico"))
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(windowsIconPath)
     # app
     qdarktheme.enable_hi_dpi()
     app = QApplication(sys.argv)
-    iconPath = os.path.abspath(os.path.join(sys.path[0], "icons", "ChatGPT-GUI.png"))
+    iconPath = os.path.abspath(os.path.join(sys.path[0], "icons", f"{appName}.png"))
     appIcon = QIcon(iconPath)
     app.setWindowIcon(appIcon)
     showMainWindow()
     # connection
     app.aboutToQuit.connect(aboutToQuit)
 
-    # Additional shortcuts on Linux
-    if platform.system() == "Linux":
+    # Desktop shortcut
+    # on Windows
+    if thisOS == "Windows":
+        desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
+        shortcutBat1 = os.path.join(desktopPath, f"{appName}.bat")
+        shortcutCommand1 = f'''powershell.exe -NoExit -Command "python '{thisFile}'"'''
+        # Create .bat for application shortcuts
+        if not os.path.exists(shortcutBat1):
+            with open(shortcutBat1, "w") as fileObj:
+                fileObj.write(shortcutCommand1)
+    # on macOS
+    if thisOS == "Darwin":
+        shortcut_file = os.path.expanduser(f"~/Desktop/{appName}.command")
+        if not os.path.isfile(shortcut_file):
+            icon_path = os.path.abspath(os.path.join("icons", f"{appName}.icns"))
+            with open(shortcut_file, "w") as f:
+                f.write("#!/bin/bash\n")
+                f.write(f"cd {wd}\n")
+                f.write(f"{sys.executable} {thisFile} gui\n")
+            commands = (
+                f"pbcopy < {icon_path}",
+                f"sips -i {icon_path}",
+                f"DeRez -only icns {icon_path} > tmpicns.rsrc",
+                f"Rez -append tmpicns.rsrc -o iconfile.icns",
+                f"SetFile -a C {shortcut_file}",
+                f"SetFile -a C iconfile.icns",
+            )
+            for command in commands:
+                os.system(command)
+            os.chmod(shortcut_file, 0o755)
+    # additional shortcuts on Linux
+    elif thisOS == "Linux":
         def desktopFileContent():
             iconPath = os.path.join(wd, "icons", "ChatGPT-GUI.png")
             return """#!/usr/bin/env xdg-open
@@ -826,7 +858,7 @@ Icon={3}
 Name=ChatGPT GUI
 """.format(wd, sys.executable, thisFile, iconPath)
 
-        ubaLinuxDesktopFile = os.path.join(wd, "ChatGPT-GUI.desktop")
+        ubaLinuxDesktopFile = os.path.join(wd, f"{appName}.desktop")
         if not os.path.exists(ubaLinuxDesktopFile):
             # Create .desktop shortcut
             with open(ubaLinuxDesktopFile, "w") as fileObj:
@@ -836,14 +868,14 @@ Name=ChatGPT GUI
                 from pathlib import Path
                 # ~/.local/share/applications
                 userAppDir = os.path.join(str(Path.home()), ".local", "share", "applications")
-                userAppDirShortcut = os.path.join(userAppDir, "ChatGPT-GUI.desktop")
+                userAppDirShortcut = os.path.join(userAppDir, f"{appName}.desktop")
                 if not os.path.exists(userAppDirShortcut):
                     Path(userAppDir).mkdir(parents=True, exist_ok=True)
                     copyfile(ubaLinuxDesktopFile, userAppDirShortcut)
                 # ~/Desktop
                 homeDir = os.environ["HOME"]
                 desktopPath = f"{homeDir}/Desktop"
-                desktopPathShortcut = os.path.join(desktopPath, "ChatGPT-GUI.desktop")
+                desktopPathShortcut = os.path.join(desktopPath, f"{appName}.desktop")
                 if os.path.exists(desktopPath) and not os.path.exists(desktopPathShortcut):
                     copyfile(ubaLinuxDesktopFile, desktopPathShortcut)
             except:
