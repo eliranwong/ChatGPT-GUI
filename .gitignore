@@ -8,5 +8,4 @@ UniqueBibleApp.desktop
 /chats/*
 .DS_Store
 iconfile.icns
-.gitignore
 tmpicns.rsrc

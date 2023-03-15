@@ -58,4 +58,8 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'replace': 'Replace',
  'replaceWith': 'Replace with',
  'searchFor': 'Search for',
+ 'replaceSelectedText': 'Replace selected text',
+ 'matchingRegularExpression': 'matching regular expression',
+ 'all': 'ALL',
+ 'replaceAll': 'Replace All',
 }
