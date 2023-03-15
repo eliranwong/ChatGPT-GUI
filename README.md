@@ -50,11 +50,11 @@ With "ChatGPT-GUI", users can:
 
 * save conversations for offline use
 
-* search history, based on title or content
+* search history, based on title or content; regular expression supported
 
 * edit and save conversations
 
-* search and replace chat content
+* search and replace chat content; regular expression supported
 
 * support multiple database files for storing offline records; it helps users to organize different topics/categories/studies in separate files.
 
