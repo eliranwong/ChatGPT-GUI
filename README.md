@@ -1,6 +1,8 @@
 # ChatGPT-GUI
 
-Use Qt to develop a standalone graphical user interface for use of ChatGPT API
+## ChatGPT Graphical User Interface
+
+A Qt-based graphical user interface application for ChatGPT API
 
 Developer: Eliran Wong
 
@@ -172,7 +174,7 @@ On the right, from top to bottom:
 
 * content view - display conversation content
 
-* Search and Replace - update content with search and replace
+* Search and Replace - update content with search and replace; "Repace" button replaces selected text only; "ALL" button replaces all strings that matches search input.
 
 * Control interface:
 
