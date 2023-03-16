@@ -15,13 +15,14 @@ pocketsphinxModelPath = ''
 pocketsphinxModelPathBin = ''
 pocketsphinxModelPathDict = ''
 qtLibrary = 'pyside6'
+regexpSearchEnabled = True
 thisTranslation = {'areyousure': 'Are you sure?',
  'audio': 'Audio',
  'chat': 'Chat',
  'chatContext': 'Chat Context',
  'choices': 'Choices',
  'clearAll': 'Clear All',
- 'configure': 'Configure',
+ 'configure': 'ChatGPT Settings',
  'editable': 'Editable',
  'exit': 'Exit',
  'exitTheApplication': 'Exit the Application',
@@ -62,4 +63,5 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'matchingRegularExpression': 'matching regular expression',
  'all': 'ALL',
  'replaceAll': 'Replace All',
+ 'toggleRegexp': 'Toggle Regular Expression',
 }

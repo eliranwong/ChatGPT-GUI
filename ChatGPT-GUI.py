@@ -73,7 +73,7 @@ class ApiDialog(QDialog):
         self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
         self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
-        self.languageBox = QComboBox()
+        """self.languageBox = QComboBox()
         initialIndex = 0
         index = 0
         for key, value in Languages.gTTSLanguageCodes.items():
@@ -82,7 +82,7 @@ class ApiDialog(QDialog):
             if value == config.chatGPTApiAudioLanguage:
                 initialIndex = index
             index += 1
-        self.languageBox.setCurrentIndex(initialIndex)
+        self.languageBox.setCurrentIndex(initialIndex)"""
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -97,7 +97,7 @@ class ApiDialog(QDialog):
         layout.addRow(f"Organization ID [{optional}]:", self.orgEdit)
         layout.addRow(f"Max Token [{required}]:", self.maxTokenEdit)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
-        layout.addRow(f"{language} [{optional}]:", self.languageBox)
+        #layout.addRow(f"{language} [{optional}]:", self.languageBox)
         layout.addWidget(buttonBox)
 
         self.setLayout(layout)
@@ -115,6 +115,8 @@ class ApiDialog(QDialog):
         #return self.languageBox.currentText()
         return self.languageBox.currentData(Qt.ToolTipRole)
 
+    def max_token(self):
+        return self.maxTokenEdit.text().strip()
 
 class Database:
     def __init__(self, filePath=""):
@@ -143,10 +145,12 @@ class Database:
             self.connection.commit()
 
     def search(self, title, content):
-        # with regular expression
-        self.cursor.execute('SELECT * FROM data WHERE title REGEXP ? AND content REGEXP ?', (title, content))
-        # without regular expression
-        #self.cursor.execute('SELECT * FROM data WHERE title LIKE ? AND content LIKE ?', ('%{}%'.format(title), '%{}%'.format(content)))
+        if config.regexpSearchEnabled:
+            # with regular expression
+            self.cursor.execute('SELECT * FROM data WHERE title REGEXP ? AND content REGEXP ?', (title, content))
+        else:
+            # without regular expression
+            self.cursor.execute('SELECT * FROM data WHERE title LIKE ? AND content LIKE ?', ('%{}%'.format(title), '%{}%'.format(content)))
         return self.cursor.fetchall()
 
     def delete(self, id):
@@ -258,7 +262,6 @@ class ChatGPTAPI(QWidget):
 
         #widgets on the right
         self.searchInput = QLineEdit()
-        self.searchInput.setToolTip(config.thisTranslation["matchingRegularExpression"])
         self.searchInput.setClearButtonEnabled(True)
         self.replaceInput = QLineEdit()
         self.replaceInput.setClearButtonEnabled(True)
@@ -361,10 +364,8 @@ class ChatGPTAPI(QWidget):
         searchTitleButton = QPushButton(config.thisTranslation["searchTitle"])
         searchContentButton = QPushButton(config.thisTranslation["searchContent"])
         self.searchTitle = QLineEdit()
-        self.searchTitle.setToolTip(config.thisTranslation["matchingRegularExpression"])
         self.searchTitle.setPlaceholderText(config.thisTranslation["searchTitleHere"])
         self.searchContent = QLineEdit()
-        self.searchContent.setToolTip(config.thisTranslation["matchingRegularExpression"])
         self.searchContent.setPlaceholderText(config.thisTranslation["searchContentHere"])
         self.listView = QListView()
         self.listModel = QStandardItemModel()
@@ -414,15 +415,43 @@ class ChatGPTAPI(QWidget):
         self.replaceInput.returnPressed.connect(self.replaceSelectedText)
 
         self.setFontSize()
+        self.updateSearchToolTips()
+
+    def setFontSize(self, index=None):
+        if index is not None:
+            config.fontSize = index + 1
+        # content view
+        font = self.contentView.font()
+        font.setPointSize(config.fontSize)
+        self.contentView.setFont(font)
+        # list view
+        font = self.listView.font()
+        font.setPointSize(config.fontSize)
+        self.listView.setFont(font)
+
+    def updateSearchToolTips(self):
+        if config.regexpSearchEnabled:
+            self.searchTitle.setToolTip(config.thisTranslation["matchingRegularExpression"])
+            self.searchContent.setToolTip(config.thisTranslation["matchingRegularExpression"])
+            self.searchInput.setToolTip(config.thisTranslation["matchingRegularExpression"])
+        else:
+            self.searchTitle.setToolTip("")
+            self.searchContent.setToolTip("")
+            self.searchInput.setToolTip("")
 
     def searchChatContent(self):
-        search = QRegularExpression(self.searchInput.text())
+        search = QRegularExpression(self.searchInput.text()) if config.regexpSearchEnabled else self.searchInput.text()
         self.contentView.find(search)
 
     def replaceSelectedText(self):
         currentSelectedText = self.contentView.textCursor().selectedText()
         if not currentSelectedText == "":
-            replace = self.replaceInput.text()
+            searchInput = self.searchInput.text()
+            replaceInput = self.replaceInput.text()
+            if searchInput:
+                replace = re.sub(searchInput, replaceInput, currentSelectedText) if config.regexpSearchEnabled else currentSelectedText.replace(searchInput, replaceInput)
+            else:
+                replace = self.replaceInput.text()
             self.contentView.insertPlainText(replace)
 
     def searchReplaceAll(self):
@@ -430,7 +459,7 @@ class ChatGPTAPI(QWidget):
         if search:
             replace = self.replaceInput.text()
             content = self.contentView.toPlainText()
-            newContent = re.sub(search, replace, content, flags=re.M)
+            newContent = re.sub(search, replace, content, flags=re.M) if config.regexpSearchEnabled else content.replace(search, replace)
             self.contentView.setPlainText(newContent)
 
     def multilineButtonClicked(self):
@@ -445,18 +474,6 @@ class ChatGPTAPI(QWidget):
             self.userInput.show()
             self.multilineButton.setText("+")
 
-    def setFontSize(self, index=None):
-        if index is not None:
-            config.fontSize = index + 1
-        # content view
-        font = self.contentView.font()
-        font.setPointSize(config.fontSize)
-        self.contentView.setFont(font)
-        # list view
-        font = self.listView.font()
-        font.setPointSize(config.fontSize)
-        self.listView.setFont(font)
-
     def showApiDialog(self):
         dialog = ApiDialog(self)
         result = dialog.exec() if config.qtLibrary == "pyside6" else dialog.exec_()
@@ -470,7 +487,7 @@ class ChatGPTAPI(QWidget):
             except:
                 pass
             config.chatGPTApiContext = dialog.context()
-            config.chatGPTApiAudioLanguage = dialog.language()
+            #config.chatGPTApiAudioLanguage = dialog.language()
             self.newData()
 
     def updateApiModel(self, index):
@@ -757,6 +774,10 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.toggleSystemTray)
         file_menu.addAction(new_action)
 
+        new_action = QAction(config.thisTranslation["toggleRegexp"], self)
+        new_action.triggered.connect(self.toggleRegexp)
+        file_menu.addAction(new_action)
+
         file_menu.addSeparator()
 
         # Create a Exit action and add it to the File menu
@@ -770,7 +791,12 @@ class MainWindow(QMainWindow):
         #self.setWindowTitle("ChatGPT-GUI")
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
-    
+
+    def toggleRegexp(self):
+        config.regexpSearchEnabled = not config.regexpSearchEnabled
+        self.chatGPT.updateSearchToolTips()
+        QMessageBox.information(self, "ChatGPT-GUI", f"Regular expression for search and replace is {'enabled' if config.regexpSearchEnabled else 'disabled'}!")
+
     def toggleSystemTray(self):
         config.enableSystemTray = not config.enableSystemTray
         QMessageBox.information(self, "ChatGPT-GUI", "You need to restart this application to make the changes effective.")
@@ -841,12 +867,16 @@ if __name__ == '__main__':
     # on Windows
     if thisOS == "Windows":
         desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-        shortcutBat1 = os.path.join(desktopPath, f"{appName}.bat")
+        shortcutDir = desktopPath if os.path.isdir(desktopPath) else wd
+        shortcutBat1 = os.path.join(shortcutDir, f"{appName}.bat")
         shortcutCommand1 = f'''powershell.exe -NoExit -Command "python '{thisFile}'"'''
         # Create .bat for application shortcuts
         if not os.path.exists(shortcutBat1):
-            with open(shortcutBat1, "w") as fileObj:
-                fileObj.write(shortcutCommand1)
+            try:
+                with open(shortcutBat1, "w") as fileObj:
+                    fileObj.write(shortcutCommand1)
+            except:
+                pass
     # on macOS
     if thisOS == "Darwin":
         shortcut_file = os.path.expanduser(f"~/Desktop/{appName}.command")

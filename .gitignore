@@ -9,3 +9,4 @@ UniqueBibleApp.desktop
 .DS_Store
 iconfile.icns
 tmpicns.rsrc
+*.bat

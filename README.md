@@ -6,7 +6,7 @@ A Qt-based graphical user interface application for ChatGPT API
 
 Developer: Eliran Wong
 
-![screenshot1](https://user-images.githubusercontent.com/25262722/224390511-540f1ca0-2f76-4f83-9332-02aba5cb5b3c.png)
+![screenshot1](https://user-images.githubusercontent.com/25262722/225602529-10d04bec-2412-4a1c-ae4c-d9f891a18dbe.png)
 
 # Background
 
@@ -50,19 +50,21 @@ With "ChatGPT-GUI", users can:
 
 * save conversations for offline use
 
-* search history, based on title or content; regular expression supported
+* search history, based on title or content
 
 * edit and save conversations
 
-* search and replace chat content; regular expression supported
+* search and replace chat content
 
 * support multiple database files for storing offline records; it helps users to organize different topics/categories/studies in separate files.
 
-* enter message with voice
+* enter message with voice-typing
 
 * use OpenAI image model to generate images
 
 * support system tray
+
+* choose to use regular expression for search and replace
 
 # Download and Setup (Windows)
 
@@ -142,10 +144,10 @@ Run in terminal:
 
 # QuickStart
 
-![screenshot2](https://user-images.githubusercontent.com/25262722/224164608-fcee440a-8be3-4850-8869-415acc1ce869.png)
+![screenshot2](https://user-images.githubusercontent.com/25262722/225602535-eaf2a1f9-c2d6-4e3c-8997-24216a2d8dab.png)
 
 1) Launch ChatGPT-GUI by running "python3 ChatGPT-GUI"
-2) Click "Settings" to enter your own OpenAI API key
+2) Click "Settings" to enter your own OpenAI API key.  You may optionally specify a chat context there.
 3) Enter your message in message entry field and press Enter key, to start a conversation
 
 # Graphical User Interface
@@ -211,6 +213,8 @@ Application menu:
 * Toggle Dark Theme - toggle between dark and light theme
 
 * Toggle System Tray - toggle system tray; restart the application is required
+
+* Toggle Regular Expression - toggle regular expression for search and replace
 
 * Exit - Exit the application
 
