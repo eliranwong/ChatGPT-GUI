@@ -123,7 +123,7 @@ class Database:
         def regexp(expr, item):
             reg = re.compile(expr, flags=re.IGNORECASE)
             return reg.search(item) is not None
-        defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(config.chatGPTApiLastChatDatabase) else os.path.join("chats", "default.chat")
+        defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(config.chatGPTApiLastChatDatabase) else os.path.join(wd, "chats", "default.chat")
         self.filePath = filePath if filePath else defaultFilePath
         self.connection = sqlite3.connect(self.filePath)
         self.connection.create_function("REGEXP", 2, regexp)
@@ -189,7 +189,7 @@ class ChatGPTAPI(QWidget):
         # Show a file dialog to get the file path to open
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(config.marvelData, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+        filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(wd, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
 
         # If the user selects a file path, open the file
         self.database = Database(filePath)
@@ -200,7 +200,7 @@ class ChatGPTAPI(QWidget):
         # Show a file dialog to get the file path to save
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filePath, _ = QFileDialog.getSaveFileName(self, "New Database", os.path.join(config.marvelData, "chats", self.database.filePath if copyExistingDatabase else "new.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+        filePath, _ = QFileDialog.getSaveFileName(self, "New Database", os.path.join(wd, "chats", self.database.filePath if copyExistingDatabase else "new.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
 
         # If the user selects a file path, save the file
         if filePath:
