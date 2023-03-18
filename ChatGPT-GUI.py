@@ -525,6 +525,7 @@ class ChatGPTAPI(QWidget):
             data = item.data(Qt.UserRole)
             self.database.delete(data[0])
             self.loadData()
+            self.newData()
 
     def clearData(self):
         confirm = QMessageBox.question(self, config.thisTranslation["clearAll"], config.thisTranslation["areyousure"], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
