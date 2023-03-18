@@ -746,6 +746,13 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        new_action = QAction(config.thisTranslation["fileManager"], self)
+        new_action.setShortcut("Ctrl+O")
+        new_action.triggered.connect(self.openDatabaseDirectory)
+        file_menu.addAction(new_action)
+
+        file_menu.addSeparator()
+
         new_action = QAction(config.thisTranslation["newChat"], self)
         new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self.chatGPT.newData)
@@ -755,8 +762,6 @@ class MainWindow(QMainWindow):
         new_action.setShortcut("Ctrl+S")
         new_action.triggered.connect(self.chatGPT.saveData)
         file_menu.addAction(new_action)
-
-        file_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["printChat"], self)
         new_action.setShortcut("Ctrl+P")
@@ -768,6 +773,8 @@ class MainWindow(QMainWindow):
         openSettings = QAction(config.thisTranslation["configure"], self)
         openSettings.triggered.connect(self.chatGPT.showApiDialog)
         file_menu.addAction(openSettings)
+
+        file_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["toggleDarkTheme"], self)
         new_action.triggered.connect(self.toggleTheme)
@@ -794,6 +801,17 @@ class MainWindow(QMainWindow):
         #self.setWindowTitle("ChatGPT-GUI")
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
+
+    def openDatabaseDirectory(self):
+        databaseDirectory = os.path.dirname(os.path.abspath(config.chatGPTApiLastChatDatabase))
+        thisOS = platform.system()
+        if thisOS == "Windows":
+            openCommand = "start"
+        elif thisOS == "Darwin":
+            openCommand = "open"
+        elif thisOS == "Linux":
+            openCommand = "xdg-open"
+        os.system(f"{openCommand} {databaseDirectory}")
 
     def toggleRegexp(self):
         config.regexpSearchEnabled = not config.regexpSearchEnabled

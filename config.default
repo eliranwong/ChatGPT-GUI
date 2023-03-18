@@ -64,4 +64,5 @@ thisTranslation = {'areyousure': 'Are you sure?',
  'all': 'ALL',
  'replaceAll': 'Replace All',
  'toggleRegexp': 'Toggle Regular Expression',
+ 'fileManager': 'Database Directory',
 }
