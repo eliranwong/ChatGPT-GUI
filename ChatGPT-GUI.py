@@ -901,7 +901,7 @@ if __name__ == '__main__':
             except:
                 pass
     # on macOS
-    if thisOS == "Darwin":
+    elif thisOS == "Darwin":
         shortcut_file = os.path.expanduser(f"~/Desktop/{appName}.command")
         if not os.path.isfile(shortcut_file):
             with open(shortcut_file, "w") as f:
@@ -943,7 +943,7 @@ Name=ChatGPT GUI
                 homeDir = os.environ["HOME"]
                 desktopPath = f"{homeDir}/Desktop"
                 desktopPathShortcut = os.path.join(desktopPath, f"{appName}.desktop")
-                if os.path.exists(desktopPath) and not os.path.exists(desktopPathShortcut):
+                if os.path.isfile(desktopPath) and not os.path.isfile(desktopPathShortcut):
                     copyfile(ubaLinuxDesktopFile, desktopPathShortcut)
             except:
                 pass
