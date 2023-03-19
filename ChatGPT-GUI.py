@@ -685,6 +685,7 @@ Follow the following steps:
                 print("Failed to run '{0}'!".format(os.path.basename(script)))
 
     def runPlugins(self):
+        # users can modify config.predefinedContexts and config.chatGPTTransformers via plugins
         config.predefinedContexts = {
             "[none]": "",
         }
