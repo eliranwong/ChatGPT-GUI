@@ -275,3 +275,31 @@ For example, ChatGPT is weak to produce responses in traditional Chinese.  The f
 >     return cc.convert(text)<br>
 > <br>
 > config.chatGPTTransformers.append(convertToTraditionalChinese)<br>
+
+How to use plugins to customize input suggestion?
+
+You can customize input suggestions by modifying 'config.inputSuggestions' with use of plugins.
+
+For example:
+
+1. Save a python file, e.g. inputSuggestions.py, in folder "plugins".
+2. Add content, for example:
+
+> import config
+
+> config.inputSuggestions = config.inputSuggestions + ["Write a summary", "Write an outline", "Write a letter"]
+
+How to use plugins to customize predefined contexts?
+
+You can customize predefined contexts by modifying 'config.predefinedContexts' with use of plugins.
+
+For example:
+
+1. Save a python file, e.g. predefinedContexts.py, in folder "plugins".
+2. Add content, for example:
+
+> import config
+
+> config.predefinedContexts["Introduction"] = """Write a introduction pertaining to the following content."""
+
+> config.predefinedContexts["Summary"] = """Write a summary pertaining to the following content."""

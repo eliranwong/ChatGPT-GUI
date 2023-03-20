@@ -25,12 +25,12 @@ if config.qtLibrary == "pyside6":
     from PySide6.QtPrintSupport import QPrinter, QPrintDialog
     from PySide6.QtCore import Qt, QThread, Signal, QRegularExpression
     from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon, QFontMetrics, QTextDocument
-    from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from PySide6.QtWidgets import QCompleter, QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 else:
     from qtpy.QtPrintSupport import QPrinter, QPrintDialog
     from qtpy.QtCore import Qt, QThread, Signal, QRegularExpression
     from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon, QFontMetrics, QTextDocument
-    from qtpy.QtWidgets import QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from qtpy.QtWidgets import QCompleter, QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
 
 
 class SpeechRecognitionThread(QThread):
@@ -287,6 +287,9 @@ class ChatGPTAPI(QWidget):
         self.replaceInput = QLineEdit()
         self.replaceInput.setClearButtonEnabled(True)
         self.userInput = QLineEdit()
+        completer = QCompleter(config.inputSuggestions)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.userInput.setCompleter(completer)
         self.userInput.setPlaceholderText(config.thisTranslation["messageHere"])
         self.userInput.mousePressEvent = lambda _ : self.userInput.selectAll()
         self.userInput.setClearButtonEnabled(True)
@@ -685,10 +688,11 @@ Follow the following steps:
                 print("Failed to run '{0}'!".format(os.path.basename(script)))
 
     def runPlugins(self):
-        # users can modify config.predefinedContexts and config.chatGPTTransformers via plugins
+        # users can modify config.predefinedContexts, config.inputSuggestions and config.chatGPTTransformers via plugins
         config.predefinedContexts = {
             "[none]": "",
         }
+        config.inputSuggestions = []
         config.chatGPTTransformers = []
         pluginFolder = os.path.join(os.getcwd(), "plugins")
         for plugin in self.fileNamesWithoutExtension(pluginFolder, "py"):
