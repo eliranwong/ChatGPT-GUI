@@ -1,4 +1,5 @@
 **/__pycache__/**
+/temp*
 /venv*
 /venv_*
 config.py

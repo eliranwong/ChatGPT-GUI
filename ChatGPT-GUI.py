@@ -19,7 +19,6 @@ except:
     isPocketsphinxInstalled = False
 
 from datetime import datetime
-from util.Languages import Languages
 from util.Worker import ChatGPTResponse, OpenAIImage
 if config.qtLibrary == "pyside6":
     from PySide6.QtPrintSupport import QPrinter, QPrintDialog
@@ -185,6 +184,7 @@ class ChatGPTAPI(QWidget):
 
     def __init__(self, parent):
         super().__init__()
+        config.chatGPTApi = self
         self.parent = parent
         # required
         openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
@@ -891,7 +891,7 @@ if __name__ == '__main__':
     def aboutToQuit():
         with open("config.py", "w", encoding="utf-8") as fileObj:
             for name in dir(config):
-                if not name.startswith("__") and not name in ("mainWindow", "chatGPTTransformers", "predefinedContext"):
+                if not name.startswith("__") and not name in ("mainWindow", "chatGPTApi", "chatGPTTransformers", "predefinedContext", "predefinedContexts", "inputSuggestions"):
                     try:
                         value = eval(f"config.{name}")
                         fileObj.write("{0} = {1}\n".format(name, pprint.pformat(value)))
