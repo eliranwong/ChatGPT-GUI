@@ -702,9 +702,10 @@ Follow the following steps:
             OpenAIImage(self).workOnGetResponse(userInput)
 
     def displayImage(self, imageUrl):
-        webbrowser.open(imageUrl)
-        self.userInput.setEnabled(True)
-        self.progressBar.hide()
+        if imageUrl:
+            webbrowser.open(imageUrl)
+            self.userInput.setEnabled(True)
+            self.progressBar.hide()
 
     def getResponse(self):
         userInput = self.userInput.text().strip()

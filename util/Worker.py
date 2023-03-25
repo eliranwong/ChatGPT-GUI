@@ -130,7 +130,8 @@ class ChatGPTResponse:
             #Handle rate limit error (we recommend using exponential backoff)
             return f"OpenAI API request exceeded rate limit: {e}"
         except:
-            traceback.print_exc()
+            #traceback.print_exc()
+            responses = traceback.format_exc()
         return responses
 
     def workOnGetResponse(self, messages):
@@ -159,17 +160,20 @@ class OpenAIImage:
                 n=1,
                 size="1024x1024",
             )
+            return response['data'][0]['url']
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:
             #Handle API error here, e.g. retry or log
-            return f"OpenAI API returned an API Error: {e}"
+            print(f"OpenAI API returned an API Error: {e}")
         except openai.error.APIConnectionError as e:
             #Handle connection error here
-            return f"Failed to connect to OpenAI API: {e}"
+            print(f"Failed to connect to OpenAI API: {e}")
         except openai.error.RateLimitError as e:
             #Handle rate limit error (we recommend using exponential backoff)
-            return f"OpenAI API request exceeded rate limit: {e}"
-        return response['data'][0]['url']
+            print(f"OpenAI API request exceeded rate limit: {e}")
+        except:
+            traceback.print_exc()
+        return ""
 
     def workOnGetResponse(self, prompt):
         # Pass the function to execute
