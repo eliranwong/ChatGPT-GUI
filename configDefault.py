@@ -64,7 +64,7 @@ def setConfig():
         ('chatGPTApiPredefinedContext', '[none]'),
         ('chatGPTApiContext', ''),
         ('chatGPTApiLastChatDatabase', ''),
-        ('chatGPTApiMaxTokens', 1024),
+        ('chatGPTApiMaxTokens', 512),
         ('chatGPTApiNoOfChoices', 1),
         ('chatGPTApiTemperature', 0.8),
         ('darkTheme', True),
