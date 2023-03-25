@@ -52,6 +52,7 @@ def setConfig():
         'toggleRegexp': 'Toggle Regular Expression',
         'fileManager': 'Database Directory',
         'predefinedContext': 'Predefined Context',
+        'toggleMultilineInput': 'Toggle Multiline User Input',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),

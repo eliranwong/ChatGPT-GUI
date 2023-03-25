@@ -27,7 +27,7 @@ class WorkerSignals(QObject):
     finished = Signal()
     error = Signal(tuple)
     result = Signal(object)
-    progress = Signal(int)
+    progress = Signal(str)
 
 
 class Worker(QRunnable):
@@ -54,7 +54,7 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
 
         # Add the callback to our kwargs
-        #self.kwargs['progress_callback'] = self.signals.progress
+        self.kwargs["progress_callback"] = self.signals.progress
 
     @Slot()
     def run(self):
@@ -85,23 +85,40 @@ class ChatGPTResponse:
         self.parent = parent
         self.threadpool = QThreadPool()
 
-    def getResponse(self, messages):
+    def getResponse(self, messages, progress_callback):
         responses = ""
         try:
-            completion = openai.ChatCompletion.create(
-                model=config.chatGPTApiModel,
-                messages=messages,
-                max_tokens=config.chatGPTApiMaxTokens,
-                temperature=config.chatGPTApiTemperature,
-                n=config.chatGPTApiNoOfChoices,
-            )
-            for index, choice in enumerate(completion.choices):
-                chat_response = choice.message.content
-                if len(completion.choices) > 1:
-                    if index > 0:
-                        responses += "\n"
-                    responses += f"### Response {(index+1)}:\n"
-                responses += f"{chat_response}\n\n"
+            if config.chatGPTApiNoOfChoices == 1:
+                completion = openai.ChatCompletion.create(
+                    model=config.chatGPTApiModel,
+                    messages=messages,
+                    max_tokens=config.chatGPTApiMaxTokens,
+                    temperature=config.chatGPTApiTemperature,
+                    n=config.chatGPTApiNoOfChoices,
+                    stream=True,
+                )
+                progress_callback.emit("\n")
+                for event in completion:                                 
+                    # RETRIEVE THE TEXT FROM THE RESPONSE
+                    event_text = event["choices"][0]["delta"] # EVENT DELTA RESPONSE
+                    progress = event_text.get("content", "") # RETRIEVE CONTENT
+                    # STREAM THE ANSWER
+                    progress_callback.emit(progress)
+            else:
+                completion = openai.ChatCompletion.create(
+                    model=config.chatGPTApiModel,
+                    messages=messages,
+                    max_tokens=config.chatGPTApiMaxTokens,
+                    temperature=config.chatGPTApiTemperature,
+                    n=config.chatGPTApiNoOfChoices,
+                )
+                for index, choice in enumerate(completion.choices):
+                    chat_response = choice.message.content
+                    if len(completion.choices) > 1:
+                        if index > 0:
+                            responses += "\n"
+                        responses += f"### Response {(index+1)}:\n"
+                    responses += f"{chat_response}\n\n"
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:
             #Handle API error here, e.g. retry or log
@@ -112,12 +129,15 @@ class ChatGPTResponse:
         except openai.error.RateLimitError as e:
             #Handle rate limit error (we recommend using exponential backoff)
             return f"OpenAI API request exceeded rate limit: {e}"
+        except:
+            traceback.print_exc()
         return responses
 
     def workOnGetResponse(self, messages):
         # Pass the function to execute
         worker = Worker(self.getResponse, messages) # Any other args, kwargs are passed to the run function
         worker.signals.result.connect(self.parent.processResponse)
+        worker.signals.progress.connect(self.parent.printStream)
         # Connection
         #worker.signals.finished.connect(None)
         # Execute
