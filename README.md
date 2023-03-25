@@ -36,6 +36,8 @@ ChatGPT web version is available at: https://chat.openai.com/chat
 
 With "ChatGPT-GUI", users can:
 
+* include latest internet search results in ChatGPT responses
+
 * enter message in multiline-input
 
 * start conversation with a particular context.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, in our screenshots we set "talk about English literature" as the chat context.  This tells ChatGPT to give related responses.
@@ -78,7 +80,7 @@ Run in terminal:
 
 > .\venv\Scripts\activate
 
-> pip3 install PySide6 openai gtts pyqtdarktheme
+> pip3 install PySide6 openai gtts pyqtdarktheme duckduckgo-search
 
 Install 'pocketsphinx' to support voice-typing [optional]:
 
@@ -217,6 +219,22 @@ Application menu:
 * Toggle Regular Expression - toggle regular expression for search and replace
 
 * Exit - Exit the application
+
+# Include Latest Internet Search Results
+
+ChatGPT itself does not have access to real-time information.
+
+With ChatGPT-GUI offers users an option to include the latest internet search results, based on DuckDuckGo search engine.
+
+![include_internet_options](https://user-images.githubusercontent.com/25262722/227739646-6685bdd2-bcb7-4d1e-b66b-3e4837331ff3.png)
+
+When internet search results are not included:
+
+![include_internet_options_disabled](https://user-images.githubusercontent.com/25262722/227739619-15a9984e-d1db-4984-9d9d-c8bb28ede4c6.png)
+
+When internet search results are included:
+
+![include_internet_options_enabled](https://user-images.githubusercontent.com/25262722/227739634-d6dac576-48a0-4a5c-8425-34985f6141b4.png)
 
 # FAQ - Frequently Asked Questions
 

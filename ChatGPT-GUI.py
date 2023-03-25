@@ -1,4 +1,5 @@
 import os, shutil, platform, ctypes, glob
+from duckduckgo_search import ddg
 
 # set working directory
 thisFile = os.path.realpath(__file__)
@@ -81,6 +82,12 @@ class ApiDialog(QDialog):
         self.apiModelBox.setCurrentIndex(initialIndex)
         self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
         self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
+        self.maxInternetSearchResults = QLineEdit(str(config.maximumDuckDuckGoSearchResults))
+        self.maxInternetSearchResults.setToolTip("The maximum number of internet search response to be included.")
+        self.includeInternetSearches = QCheckBox(config.thisTranslation["include"])
+        self.includeInternetSearches.setToolTip("Include latest internet search results")
+        self.includeInternetSearches.setCheckState(Qt.Checked if config.includeDuckDuckGoSearchResults else Qt.Unchecked)
+        self.includeDuckDuckGoSearchResults = config.includeDuckDuckGoSearchResults
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
         self.predefinedContextBox = QComboBox()
         initialIndex = 0
@@ -101,6 +108,8 @@ class ApiDialog(QDialog):
         # https://platform.openai.com/account/api-keys
         predefinedContext = config.thisTranslation["predefinedContext"]
         context = config.thisTranslation["chatContext"]
+        latestOnlineSearchResults = config.thisTranslation["latestOnlineSearchResults"]
+        maximumOnlineSearchResults = config.thisTranslation["maximumOnlineSearchResults"]
         required = config.thisTranslation["required"]
         optional = config.thisTranslation["optional"]
         layout.addRow(f"OpenAI API Key [{required}]:", self.apiKeyEdit)
@@ -109,7 +118,10 @@ class ApiDialog(QDialog):
         layout.addRow(f"Max Token [{required}]:", self.maxTokenEdit)
         layout.addRow(f"{predefinedContext} [{optional}]:", self.predefinedContextBox)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
+        layout.addRow(f"{latestOnlineSearchResults} [{optional}]:", self.includeInternetSearches)
+        layout.addRow(f"{maximumOnlineSearchResults} [{optional}]:", self.maxInternetSearchResults)
         layout.addWidget(buttonBox)
+        self.includeInternetSearches.stateChanged.connect(self.toggleIncludeDuckDuckGoSearchResults)
 
         self.setLayout(layout)
 
@@ -135,6 +147,15 @@ class ApiDialog(QDialog):
 
     def max_token(self):
         return self.maxTokenEdit.text().strip()
+    
+    def include_internet_searches(self):
+        return self.includeDuckDuckGoSearchResults
+
+    def toggleIncludeDuckDuckGoSearchResults(self, state):
+        self.includeDuckDuckGoSearchResults = True if state else False
+
+    def max_internet_search_results(self):
+        return self.maxInternetSearchResults.text().strip()
 
 class Database:
     def __init__(self, filePath=""):
@@ -514,8 +535,17 @@ class ChatGPTAPI(QWidget):
             config.openaiApiOrganization = dialog.org()
             try:
                 config.chatGPTApiMaxTokens = int(dialog.max_token())
+                if config.chatGPTApiMaxTokens < 20:
+                    config.chatGPTApiMaxTokens = 20
             except:
                 pass
+            try:
+                config.maximumDuckDuckGoSearchResults = int(dialog.max_internet_search_results())
+                if config.maximumDuckDuckGoSearchResults <= 0:
+                    config.maximumDuckDuckGoSearchResults = 1
+            except:
+                pass
+            config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
             config.chatGPTApiModel = dialog.apiModel()
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContext = dialog.context()
@@ -632,13 +662,13 @@ Follow the following steps:
 
     def resetMessages(self):
         self.messages = [
-            {"role": "system", "content" : "You’re a kind helpful assistant"}
+            {"role": "system", "content": "You’re a kind helpful assistant"}
         ]
         if not config.chatGPTApiPredefinedContext in config.predefinedContexts:
             config.chatGPTApiPredefinedContext = "[none]"
         context = config.chatGPTApiContext if config.chatGPTApiPredefinedContext == "[none]" else config.predefinedContexts[config.chatGPTApiPredefinedContext]
         if context:
-            self.messages.append({"role": "assistant", "content" : context})
+            self.messages.append({"role": "assistant", "content": context})
 
     def print(self, text):
         self.contentView.appendPlainText(f"\n{text}" if self.contentView.toPlainText() else text)
@@ -685,7 +715,17 @@ Follow the following steps:
             self.currentLoadingID = self.contentID
             self.currentLoadingContent = self.contentView.toPlainText().strip()
             self.progressBar.show() # show progress bar
-            self.messages.append({"role": "user", "content": userInput}) # update messages
+            if config.includeDuckDuckGoSearchResults:
+                results = ddg(userInput, time='y', max_results=config.maximumDuckDuckGoSearchResults)
+                news = ""
+                for r in results:
+                    if "title" in r and "body" in r:
+                        title = r["title"]
+                        body = r["body"]
+                        news += f"{title}. {body} "
+                self.messages.append({"role": "user", "content": f"{userInput}. Include the following information that you don't know in your response to my input: {news}"})
+            else:
+                self.messages.append({"role": "user", "content": userInput})
             ChatGPTResponse(self).workOnGetResponse(self.messages) # get chatGPT response in a separate thread
 
     def fileNamesWithoutExtension(self, dir, ext):

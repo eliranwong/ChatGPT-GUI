@@ -53,6 +53,9 @@ def setConfig():
         'fileManager': 'Database Directory',
         'predefinedContext': 'Predefined Context',
         'toggleMultilineInput': 'Toggle Multiline User Input',
+        'latestOnlineSearchResults': 'Latest Online Search Results',
+        'maximumOnlineSearchResults': 'Maximum Online Search Results',
+        'include': 'Include',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
@@ -75,7 +78,9 @@ def setConfig():
         ('pocketsphinxModelPathDict', ''),
         ('qtLibrary', 'pyside6'),
         ('regexpSearchEnabled', True),
-        ('thisTranslation', thisTranslation)
+        ('includeDuckDuckGoSearchResults', False),
+        ('maximumDuckDuckGoSearchResults', 5),
+        ('thisTranslation', thisTranslation),
     )
     for key, value in defaultSettings:
         if not hasattr(config, key):
