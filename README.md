@@ -6,7 +6,7 @@ A Qt-based graphical user interface application for ChatGPT API
 
 Developer: Eliran Wong
 
-![screenshot1](https://user-images.githubusercontent.com/25262722/225602529-10d04bec-2412-4a1c-ae4c-d9f891a18dbe.png)
+<img width="1243" alt="screenshot" src="https://user-images.githubusercontent.com/25262722/227805265-bd26c0c9-9c6a-4e4d-83c9-3e27ea3d3c7e.png">
 
 # Background
 
