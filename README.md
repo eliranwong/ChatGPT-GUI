@@ -252,7 +252,7 @@ You can find the option in "Chat Settings":
 
 When latest internet search results are not included:
 
-<img width="1192" alt="ChatGPTwithoutInternet" src="https://user-images.githubusercontent.com/25262722/227799945-1a119179-8973-4cdf-9100-10d413a192ae.png">
+<img width="1192" alt="ChatGPTwithoutInternet" src="https://user-images.githubusercontent.com/25262722/227804911-ea755b7c-3004-4e06-be26-9fdab7d4101c.png">
 
 When latest internet search results are included:
 
