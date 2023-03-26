@@ -118,7 +118,7 @@ Run in terminal:
 
 > source venv/bin/activate
 
-> pip3 install PySide6 openai gtts pyqtdarktheme
+> pip3 install PySide6 openai gtts pyqtdarktheme duckduckgo-search
 
 Install 'pocketsphinx' to support voice-typing [optional]:
 
@@ -146,11 +146,9 @@ Run in terminal:
 
 # QuickStart
 
-![screenshot2](https://user-images.githubusercontent.com/25262722/225602535-eaf2a1f9-c2d6-4e3c-8997-24216a2d8dab.png)
-
-1) Launch ChatGPT-GUI by running "python3 ChatGPT-GUI"
-2) Click "Settings" to enter your own OpenAI API key.  You may optionally specify a chat context there.
-3) Enter your message in message entry field and press Enter key, to start a conversation
+1) Launch ChatGPT-GUI by running "python3 ChatGPT-GUI.py"
+2) Click the "[Settings](https://github.com/eliranwong/ChatGPT-GUI#chat-settings)" button to enter your own OpenAI API key
+3) Enter your message and click the "Send" button, to start a conversation
 
 # Graphical User Interface
 
