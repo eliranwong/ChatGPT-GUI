@@ -593,7 +593,7 @@ class ChatGPTAPI(QWidget):
             self.database.clear()
             self.loadData()
 
-    def saveData(self):
+    def saveData(self, updateContext=True):
         text = self.contentView.toPlainText().strip()
         if text:
             lines = text.split("\n")
@@ -603,6 +603,8 @@ class ChatGPTAPI(QWidget):
             content = text
             self.database.insert(self.contentID, title, content)
             self.loadData()
+            if updateContext:
+                self.updateContext(self.contentView.toPlainText())
 
     def loadData(self):
         # reverse the list, so that the latest is on the top
@@ -717,7 +719,7 @@ Follow the following steps:
                 self.listView.setDisabled(True)
                 self.newButton.setDisabled(True)
             self.print(f">>> {userInput}")
-            self.saveData()
+            self.saveData(updateContext=False)
             self.currentLoadingID = self.contentID
             self.currentLoadingContent = self.contentView.toPlainText().strip()
             self.progressBar.show() # show progress bar
@@ -767,7 +769,7 @@ Follow the following steps:
         if responses:
             # reload the working content in case users change it during waiting for response
             self.contentID = self.currentLoadingID
-            self.resetContent(self.currentLoadingContent)
+            self.contentView.setPlainText(self.currentLoadingContent)
             self.currentLoadingID = self.currentLoadingContent = ""
             # transform responses
             for t in config.chatGPTTransformers:
@@ -789,7 +791,6 @@ Follow the following steps:
         if config.chatGPTApiNoOfChoices == 1:
             self.listView.setEnabled(True)
             self.newButton.setEnabled(True)
-            self.updateContext(self.contentView.toPlainText())
         self.progressBar.hide()
         self.setUserInputFocus()
 
