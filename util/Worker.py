@@ -97,7 +97,7 @@ class ChatGPTResponse:
                     n=config.chatGPTApiNoOfChoices,
                     stream=True,
                 )
-                progress_callback.emit("\n")
+                progress_callback.emit("\n\n~~~ ")
                 for event in completion:                                 
                     # RETRIEVE THE TEXT FROM THE RESPONSE
                     event_text = event["choices"][0]["delta"] # EVENT DELTA RESPONSE
@@ -117,7 +117,7 @@ class ChatGPTResponse:
                     if len(completion.choices) > 1:
                         if index > 0:
                             responses += "\n"
-                        responses += f"### Response {(index+1)}:\n"
+                        responses += f"~~~ Response {(index+1)}:\n"
                     responses += f"{chat_response}\n\n"
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:

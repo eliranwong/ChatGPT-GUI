@@ -38,27 +38,27 @@ With "ChatGPT-GUI", users can:
 
 * include latest internet search results in ChatGPT responses
 
-* enter message in multiline-input
+* enter multiline-message
 
-* start conversation with a particular context.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, in our screenshots we set "talk about English literature" as the chat context.  This tells ChatGPT to give related responses.
+* predefine context for conversations.  With "ChatGPT-GUI", users can specify a context for conversations.  For example, enter "talk about English literature" as the chat context in "Chat Settings", to get ChatGPT responses related to "English literature".  In addition, users can can choose to apply their customised contexts only in the beginning of a chat or all inputs.
 
 * adjust temperature [What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.]
 
 * adjust number of choices in ChatGPT responses [How many chat completion choices to generate for each input message.]
 
-* adjust font size
+* adjust font size for text display
 
-* use python plugins to process ChatGPT responses before they are displayed
+* use python plugins, to automate tasks, add predefined context, or to process ChatGPT responses before they are displayed
+
+* edit, print and save conversations
 
 * save conversations for offline use
 
 * search history, based on title or content
 
-* edit and save conversations
+* perform search and replace on chat content
 
-* search and replace chat content
-
-* support multiple database files for storing offline records; it helps users to organize different topics/categories/studies in separate files.
+* oranize chat history into different separate database files
 
 * enter message with voice-typing
 
@@ -182,7 +182,7 @@ On the right, from top to bottom:
 
 * Control interface:
 
-- Settings - open "Settings" dialog, where you can enter OpenAI API key, orgnisation ID, conversation context, text-to-speech language.
+- Settings - open "Chat Settings" dialog, [read more below](https://github.com/eliranwong/ChatGPT-GUI#chat-settings).
 
 - Temperature - according to OpenAI documentation, temperature means "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic."
 
@@ -220,21 +220,45 @@ Application menu:
 
 * Exit - Exit the application
 
+# Chat Settings
+
+<img width="606" alt="chat_settings" src="https://user-images.githubusercontent.com/25262722/227799926-26310bc2-c95e-4473-9ad5-7eef445e1d12.png">
+
+* OpenAI API Key - enter your OpenAI key
+
+* Organization ID - enter your organization ID
+
+* Max Token - specify maximum token
+
+* Predefined Context - '\[none\]' means do not apply any additional context; '\[custom\]' means apply applying context specified in 'Chat Context' described below; users can add more predefined context via pugins, read more below.
+
+* Chat Context - enter customized context
+
+* Apply Context in - 'First Input Only' or 'All Inputs'
+
+* Latest Online Search Results - check to include; uncheck to exclude
+
+* Maximum Onine Search Results - specify the maximum number of online search results to be included
+
 # Include Latest Internet Search Results
 
-ChatGPT itself does not have access to real-time information.
+OpenAI ChatGPT is currently limited to data up until September 2021.  Therefore, ChatGPT itself does not have access to real-time information.
 
-With ChatGPT-GUI offers users an option to include the latest internet search results, based on DuckDuckGo search engine.
+ChatGPT-GUI offers users an option to include the latest internet search results, powered by DuckDuckGo search engine, in ChaptGPT responses.
 
-![include_internet_options](https://user-images.githubusercontent.com/25262722/227739646-6685bdd2-bcb7-4d1e-b66b-3e4837331ff3.png)
+DuckDuckGo is a search engine that emphasizes user privacy and security, and does not store or track user data like most other search engines do. It was launched in 2008 and has gained popularity among users who are concerned about their online privacy.
 
-When internet search results are not included:
+You can find the option in "Chat Settings":
 
-![include_internet_options_disabled](https://user-images.githubusercontent.com/25262722/227739619-15a9984e-d1db-4984-9d9d-c8bb28ede4c6.png)
+<img width="606" alt="internetOption" src="https://user-images.githubusercontent.com/25262722/227799933-d0b00fa4-ad9e-4432-bdd5-55a38c0315f5.png">
 
-When internet search results are included:
+When latest internet search results are not included:
 
-![include_internet_options_enabled](https://user-images.githubusercontent.com/25262722/227739634-d6dac576-48a0-4a5c-8425-34985f6141b4.png)
+<img width="1192" alt="ChatGPTwithoutInternet" src="https://user-images.githubusercontent.com/25262722/227799945-1a119179-8973-4cdf-9100-10d413a192ae.png">
+
+When latest internet search results are included:
+
+<img width="1192" alt="ChatGPTwithInternet" src="https://user-images.githubusercontent.com/25262722/227799952-65cf6e6f-f1ae-49c4-89f6-b60a0cf7eb25.png">
 
 # FAQ - Frequently Asked Questions
 

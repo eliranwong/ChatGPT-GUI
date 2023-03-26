@@ -56,6 +56,9 @@ def setConfig():
         'latestOnlineSearchResults': 'Latest Online Search Results',
         'maximumOnlineSearchResults': 'Maximum Online Search Results',
         'include': 'Include',
+        'applyContext': 'Apply Context in',
+        'firstInputOnly': 'First Input Only',
+        'allInputs': 'All Inputs',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
@@ -80,6 +83,7 @@ def setConfig():
         ('regexpSearchEnabled', True),
         ('includeDuckDuckGoSearchResults', False),
         ('maximumDuckDuckGoSearchResults', 5),
+        ('chatGPTApiContextInAllInputs', False),
         ('thisTranslation', thisTranslation),
     )
     for key, value in defaultSettings:
