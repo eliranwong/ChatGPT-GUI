@@ -262,17 +262,17 @@ When latest internet search results are included:
 
 How to edit a record's title?
 
-> Edit the first line of a record to change its title.
+> Edit the first line of a conversation record to change its title.
 
 Where are database files stored?
 
-> Chat database file is stored in folder "chats" by default.  The default file is named as "default.chat"
+> Chat database file is stored in folder "chats" by default.  The default file is named as "default.chat".  The latest version of ChatGPT-GUI can store database files where users like.
 
 What is the format of the database files?
 
-> We use ".chat" as extension for database files to work with the GUI.  They are all standard sqlite files.
+> We use ".chat" as an extension for database files that work with the GUI.  They are all standard sqlite files.
 
-Can I change the context to make the conversation context to focus on a particular area?
+Can I change the context to make the conversation to focus on a particular area?
 
 > Yes.  Click the "Settings" button to edit the chat context.  The default is empty.  Change it to the topic you want to focus in your conversations.
 
@@ -282,7 +282,9 @@ Can I change the language of the interface?
 
 How to use python plugins to process ChatGPT responses before they are displayed?
 
-Create a python file and save it in folder "plugins".
+> It can be done via use of plugins
+
+First, create a python file and save it in folder "plugins".
 
 For example, print response on console in addition to displayint it on GUI:
 > import config<br>
@@ -305,7 +307,7 @@ For example, change all characters to upper cases:
 > <br>
 > config.chatGPTTransformers.append(convertToUpperCases)<br>
 
-For example, ChatGPT is weak to produce responses in traditional Chinese.  The following plugin convert all simplified Chinese into traditional Chinese characters:
+For example, ChatGPT is weak to produce responses in traditional Chinese.  The following plugin ensure that all simplified Chinese characters are converted into traditional Chinese characters:
 
 > import config<br>
 > from opencc import OpenCC<br>
@@ -318,7 +320,7 @@ For example, ChatGPT is weak to produce responses in traditional Chinese.  The f
 
 How to use plugins to customize input suggestion?
 
-You can customize input suggestions by modifying 'config.inputSuggestions' with use of plugins.
+> You can customize input suggestions by modifying 'config.inputSuggestions' with use of plugins.
 
 For example:
 
@@ -331,7 +333,7 @@ For example:
 
 How to use plugins to customize predefined contexts?
 
-You can customize predefined contexts by modifying 'config.predefinedContexts' with use of plugins.
+> You can customize predefined contexts by modifying 'config.predefinedContexts' with use of plugins.
 
 For example:
 
