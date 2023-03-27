@@ -28,9 +28,11 @@ Read pricing at: https://openai.com/pricing
 
 Generate API key at: https://platform.openai.com/account/api-keys
 
-# Note to ChatGPT-4 Users
+# For ChatGPT-4 Users
 
-To use ChatGPT-4
+ChatGPT-GUI supports both ChatGPT-3 and ChatGPT-4.
+
+ChatGPT-GUI uses 'gpt-3-turbo' by default.  To use ChatGPT-4:
 
 1. Make sure you have access to 'gpt-4' or 'gpt4-32k' with your OpenAI API key
 2. Select 'gpt-4' or 'gpt4-32k' as API Model in 'Chat Settings'
