@@ -2,7 +2,7 @@
 
 ## ChatGPT Graphical User Interface
 
-A Qt-based graphical user interface application for ChatGPT API
+A Qt-based graphical user interface application for ChatGPT API.  Both ChatGPT-3 and ChatGPT-4 are supported.
 
 Developer: Eliran Wong
 
@@ -10,7 +10,7 @@ Developer: Eliran Wong
 
 # Background
 
-We have used Qt to develop [a gui for using ChatGPT for bible study with UniqueBible.app](https://github.com/eliranwong/UniqueBible/wiki/Bible-Chat-with-ChatGPT-API).  Here in this project, we modify the code to make it as a standalone application for general purpose.
+We integrated ChatGPT in one of our gui applications, [UniqueBible.app](https://github.com/eliranwong/UniqueBible/wiki/Bible-Chat-with-ChatGPT-API).  Here in this project, we modify the codes to make ChatGPT-GUI as a standalone application for wider purposes.
 
 # Cross-platform
 
@@ -27,6 +27,14 @@ Users need to register an OpenAI account and generate a API key first.
 Read pricing at: https://openai.com/pricing
 
 Generate API key at: https://platform.openai.com/account/api-keys
+
+# Note to ChatGPT-4 Users
+
+To use ChatGPT-4
+
+1. Make sure you have access to 'gpt-4' or 'gpt4-32k' with your OpenAI API key
+2. Select 'gpt-4' or 'gpt4-32k' as API Model in 'Chat Settings'
+3. Enter BOTH 'OpenAI API Key' AND 'Organization ID' in 'Chat Settings'
 
 # Difference between "ChatGPT-GUI" interface and ChatGPT web version
 
@@ -220,11 +228,13 @@ Application menu:
 
 # Chat Settings
 
-<img width="606" alt="chat_settings" src="https://user-images.githubusercontent.com/25262722/227799926-26310bc2-c95e-4473-9ad5-7eef445e1d12.png">
+![chat_settings](https://user-images.githubusercontent.com/25262722/228059589-5d897e87-88bc-4f6b-b95f-59951d931b3f.png)
 
 * OpenAI API Key - enter your OpenAI key
 
-* Organization ID - enter your organization ID
+* Organization ID - enter your organization ID; required for ChatGPT-4
+
+* API Model - select 'gpt-3.5-turbo', 'gpt-4' or 'gpt4-32k'
 
 * Max Token - specify maximum token
 
