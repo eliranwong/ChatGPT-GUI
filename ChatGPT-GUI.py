@@ -695,7 +695,7 @@ Follow the following steps:
             context = config.chatGPTApiContext
         else:
             # users can modify config.predefinedContexts via plugins
-            config.predefinedContexts[config.chatGPTApiPredefinedContext]
+            context = config.predefinedContexts[config.chatGPTApiPredefinedContext]
         if context and (not history or (history and config.chatGPTApiContextInAllInputs)):
             #messages.append({"role": "assistant", "content": context})
             userInput = f"{context}\n{userInput}"
