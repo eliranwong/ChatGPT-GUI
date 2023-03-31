@@ -1,6 +1,6 @@
 import os, shutil, platform, ctypes, glob
 from duckduckgo_search import ddg
-
+from functools import partial
 # set working directory
 thisFile = os.path.realpath(__file__)
 wd = os.path.dirname(thisFile)
@@ -294,6 +294,7 @@ class ChatGPTAPI(QWidget):
         self.parent.setWindowTitle(f"ChatGPT-GUI - {basename}")
 
     def setupVariables(self):
+        self.busyLoading = False
         self.contentID = ""
         self.database = Database()
         self.updateTitle()
@@ -641,21 +642,33 @@ class ChatGPTAPI(QWidget):
             item.setData(data, Qt.UserRole)
             self.listModel.appendRow(item)
 
+    def bibleChatAction(self, context=""):
+        if context:
+            config.chatGPTApiPredefinedContext = context
+        currentSelectedText = self.contentView.textCursor().selectedText().strip()
+        if currentSelectedText:
+            self.newData()
+            self.userInput.setText(currentSelectedText)
+            self.sendMessage()
+
+
     def newData(self):
-        self.contentID = ""
-        self.contentView.setPlainText("" if openai.api_key else """OpenAI API Key is NOT Found!
+        if not self.busyLoading:
+            self.contentID = ""
+            self.contentView.setPlainText("" if openai.api_key else """OpenAI API Key is NOT Found!
 
 Follow the following steps:
 1) Register and get your OpenAI Key at https://platform.openai.com/account/api-keys
 2) Click the "Settings" button below and enter your own OpenAI API key""")
-        self.setUserInputFocus()
+            self.setUserInputFocus()
 
     def selectData(self, index):
-        data = index.data(Qt.UserRole)
-        self.contentID = data[0]
-        content = data[2]
-        self.contentView.setPlainText(content)
-        self.setUserInputFocus()
+        if not self.busyLoading:
+            data = index.data(Qt.UserRole)
+            self.contentID = data[0]
+            content = data[2]
+            self.contentView.setPlainText(content)
+            self.setUserInputFocus()
 
     def printData(self):
         # Get the printer and print dialog
@@ -764,6 +777,7 @@ Follow the following steps:
         if userInput:
             self.userInput.setDisabled(True)
             if config.chatGPTApiNoOfChoices == 1:
+                self.busyLoading = True
                 self.listView.setDisabled(True)
                 self.newButton.setDisabled(True)
             messages = self.getMessages(userInput)
@@ -829,6 +843,7 @@ Follow the following steps:
         if config.chatGPTApiNoOfChoices == 1:
             self.listView.setEnabled(True)
             self.newButton.setEnabled(True)
+            self.busyLoading = False
         self.progressBar.hide()
         self.setUserInputFocus()
 
@@ -943,6 +958,15 @@ class MainWindow(QMainWindow):
         exit_action.setStatusTip(config.thisTranslation["exitTheApplication"])
         exit_action.triggered.connect(QGuiApplication.instance().quit)
         file_menu.addAction(exit_action)
+
+        # Create predefined context menu
+        context_menu = menubar.addMenu(config.thisTranslation["predefinedContext"])
+        for index, context in enumerate(config.predefinedContexts):
+            contextAction = QAction(context, self)
+            if index < 10:
+                contextAction.setShortcut(f"Ctrl+{index}")
+            contextAction.triggered.connect(partial(self.chatGPT.bibleChatAction, context))
+            context_menu.addAction(contextAction)
 
         # set initial window size
         #self.setWindowTitle("ChatGPT-GUI")
