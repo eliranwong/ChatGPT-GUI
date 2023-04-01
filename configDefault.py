@@ -59,6 +59,8 @@ def setConfig():
         'applyContext': 'Apply Context in',
         'firstInputOnly': 'First Input Only',
         'allInputs': 'All Inputs',
+        'autoScroll': 'Auto Scroll',
+        'enable': 'Enable',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
@@ -84,6 +86,7 @@ def setConfig():
         ('includeDuckDuckGoSearchResults', False),
         ('maximumDuckDuckGoSearchResults', 5),
         ('chatGPTApiContextInAllInputs', False),
+        ('chatGPTApiAutoScrolling', True),
         ('thisTranslation', thisTranslation),
     )
     for key, value in defaultSettings:

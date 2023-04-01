@@ -90,6 +90,10 @@ class ApiDialog(QDialog):
         self.includeInternetSearches.setToolTip("Include latest internet search results")
         self.includeInternetSearches.setCheckState(Qt.Checked if config.includeDuckDuckGoSearchResults else Qt.Unchecked)
         self.includeDuckDuckGoSearchResults = config.includeDuckDuckGoSearchResults
+        self.autoScrollingCheckBox = QCheckBox(config.thisTranslation["enable"])
+        self.autoScrollingCheckBox.setToolTip("Auto-scroll display as responses are received")
+        self.autoScrollingCheckBox.setCheckState(Qt.Checked if config.chatGPTApiAutoScrolling else Qt.Unchecked)
+        self.chatGPTApiAutoScrolling = config.chatGPTApiAutoScrolling
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
         firstInputOnly = config.thisTranslation["firstInputOnly"]
         allInputs = config.thisTranslation["allInputs"]
@@ -115,6 +119,7 @@ class ApiDialog(QDialog):
 
         layout = QFormLayout()
         # https://platform.openai.com/account/api-keys
+        autoScroll = config.thisTranslation["autoScroll"]
         predefinedContext = config.thisTranslation["predefinedContext"]
         context = config.thisTranslation["chatContext"]
         applyContext = config.thisTranslation["applyContext"]
@@ -131,8 +136,10 @@ class ApiDialog(QDialog):
         layout.addRow(f"{applyContext} [{optional}]:", self.applyContextIn)
         layout.addRow(f"{latestOnlineSearchResults} [{optional}]:", self.includeInternetSearches)
         layout.addRow(f"{maximumOnlineSearchResults} [{optional}]:", self.maxInternetSearchResults)
+        layout.addRow(f"{autoScroll} [{optional}]:", self.autoScrollingCheckBox)
         layout.addWidget(buttonBox)
         self.includeInternetSearches.stateChanged.connect(self.toggleIncludeDuckDuckGoSearchResults)
+        self.autoScrollingCheckBox.stateChanged.connect(self.toggleAutoScrollingCheckBox)
 
         self.setLayout(layout)
 
@@ -161,7 +168,13 @@ class ApiDialog(QDialog):
 
     def max_token(self):
         return self.maxTokenEdit.text().strip()
-    
+
+    def enable_auto_scrolling(self):
+        return self.chatGPTApiAutoScrolling
+
+    def toggleAutoScrollingCheckBox(self, state):
+        self.chatGPTApiAutoScrolling = True if state else False
+
     def include_internet_searches(self):
         return self.includeDuckDuckGoSearchResults
 
@@ -561,6 +574,7 @@ class ChatGPTAPI(QWidget):
             except:
                 pass
             config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
+            config.chatGPTApiAutoScrolling = dialog.enable_auto_scrolling()
             config.chatGPTApiModel = dialog.apiModel()
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContextInAllInputs = dialog.contextInAllInputs()
@@ -748,8 +762,9 @@ Follow the following steps:
         #if config.chatGPTApiAudio:
         #    self.playAudio(text)
         # scroll to the bottom
-        contentScrollBar = self.contentView.verticalScrollBar()
-        contentScrollBar.setValue(contentScrollBar.maximum())
+        if config.chatGPTApiAutoScrolling:
+            contentScrollBar = self.contentView.verticalScrollBar()
+            contentScrollBar.setValue(contentScrollBar.maximum())
 
     def sendMessage(self):
         if self.userInputMultiline.isVisible():
@@ -830,8 +845,9 @@ Follow the following steps:
             # update new reponses
             self.print(responses)
             # scroll to the bottom
-            contentScrollBar = self.contentView.verticalScrollBar()
-            contentScrollBar.setValue(contentScrollBar.maximum())
+            if config.chatGPTApiAutoScrolling:
+                contentScrollBar = self.contentView.verticalScrollBar()
+                contentScrollBar.setValue(contentScrollBar.maximum())
             #if not (responses.startswith("OpenAI API re") or responses.startswith("Failed to connect to OpenAI API:")) and config.chatGPTApiAudio:
             #        self.playAudio(responses)
         # empty user input
