@@ -7,7 +7,7 @@ wd = os.path.dirname(thisFile)
 if os.getcwd() != wd:
     os.chdir(wd)
 if not os.path.isfile("config.py"):
-    open(config.py, "a", encoding="utf-8").close()
+    open("config.py", "a", encoding="utf-8").close()
 import config
 from configDefault import *
 import re, openai, sqlite3, webbrowser, sys, pprint, qdarktheme
