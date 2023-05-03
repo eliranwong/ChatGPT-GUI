@@ -11,3 +11,4 @@ UniqueBibleApp.desktop
 iconfile.icns
 tmpicns.rsrc
 *.bat
+.stop_chatgpt

@@ -29,6 +29,7 @@ def setConfig():
         'searchTitle': 'Search Title',
         'searchTitleHere': 'Search title here ...',
         'send': 'Send',
+        'stop': 'Stop',
         'settings': 'Settings',
         'show': 'Show',
         'temperature': 'Temperature',

@@ -1,4 +1,4 @@
-import config, sys, traceback, openai
+import config, sys, traceback, openai, os
 if config.qtLibrary == "pyside6":
     from PySide6.QtCore import QRunnable, Slot, Signal, QObject, QThreadPool
 else:
@@ -98,7 +98,12 @@ class ChatGPTResponse:
                     stream=True,
                 )
                 progress_callback.emit("\n\n~~~ ")
-                for event in completion:                                 
+                for event in completion:
+                    # stop generating response
+                    stop_file = ".stop_chatgpt"
+                    if os.path.isfile(stop_file):
+                        os.remove(stop_file)
+                        break                                    
                     # RETRIEVE THE TEXT FROM THE RESPONSE
                     event_text = event["choices"][0]["delta"] # EVENT DELTA RESPONSE
                     progress = event_text.get("content", "") # RETRIEVE CONTENT
