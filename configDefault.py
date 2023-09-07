@@ -42,6 +42,7 @@ def setConfig():
         'saveDatabaseAs': 'Save Database as ...',
         'newChat': 'New Chat',
         'saveChat': 'Save Chat',
+        'exportChat': 'Export Chat',
         'printChat': 'Print Chat',
         'replace': 'Replace',
         'replaceWith': 'Replace with',
@@ -62,6 +63,7 @@ def setConfig():
         'allInputs': 'All Inputs',
         'autoScroll': 'Auto Scroll',
         'enable': 'Enable',
+        'countPromptTokens': 'Count Prompt Tokens',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),

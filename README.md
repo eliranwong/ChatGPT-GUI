@@ -90,7 +90,7 @@ Run in terminal:
 
 > .\venv\Scripts\activate
 
-> pip3 install PySide6 openai gtts pyqtdarktheme duckduckgo-search
+> pip3 install PySide6 openai tiktoken gtts pyqtdarktheme duckduckgo-search
 
 Install 'pocketsphinx' to support voice-typing [optional]:
 
@@ -128,7 +128,7 @@ Run in terminal:
 
 > source venv/bin/activate
 
-> pip3 install PySide6 openai gtts pyqtdarktheme duckduckgo-search
+> pip3 install PySide6 openai tiktoken gtts pyqtdarktheme duckduckgo-search
 
 Install 'pocketsphinx' to support voice-typing [optional]:
 
