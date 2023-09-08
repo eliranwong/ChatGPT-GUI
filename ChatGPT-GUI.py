@@ -82,6 +82,15 @@ class ApiDialog(QDialog):
                 initialIndex = index
             index += 1
         self.apiModelBox.setCurrentIndex(initialIndex)
+        self.functionCallingBox = QComboBox()
+        initialIndex = 0
+        index = 0
+        for key in ("auto", "none"):
+            self.functionCallingBox.addItem(key)
+            if key == config.chatGPTApiFunctionCall:
+                initialIndex = index
+            index += 1
+        self.functionCallingBox.setCurrentIndex(initialIndex)
         self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
         self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
         self.maxInternetSearchResults = QLineEdit(str(config.maximumDuckDuckGoSearchResults))
@@ -131,6 +140,7 @@ class ApiDialog(QDialog):
         layout.addRow(f"Organization ID [{optional}]:", self.orgEdit)
         layout.addRow(f"API Model [{required}]:", self.apiModelBox)
         layout.addRow(f"Max Token [{required}]:", self.maxTokenEdit)
+        layout.addRow(f"Function Calling [{optional}]:", self.functionCallingBox)
         layout.addRow(f"{predefinedContext} [{optional}]:", self.predefinedContextBox)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
         layout.addRow(f"{applyContext} [{optional}]:", self.applyContextIn)
@@ -165,6 +175,9 @@ class ApiDialog(QDialog):
     def apiModel(self):
         #return "gpt-3.5-turbo"
         return self.apiModelBox.currentText()
+
+    def functionCalling(self):
+        return self.functionCallingBox.currentText()
 
     def max_token(self):
         return self.maxTokenEdit.text().strip()
@@ -464,7 +477,7 @@ class ChatGPTAPI(QWidget):
         
         # Connections
         self.userInput.returnPressed.connect(self.sendMessage)
-        helpButton.clicked.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/blob/main/README.md"))
+        helpButton.clicked.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/wiki"))
         apiKeyButton.clicked.connect(self.showApiDialog)
         self.multilineButton.clicked.connect(self.multilineButtonClicked)
         self.sendButton.clicked.connect(self.sendMessage)
@@ -576,6 +589,7 @@ class ChatGPTAPI(QWidget):
             config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
             config.chatGPTApiAutoScrolling = dialog.enable_auto_scrolling()
             config.chatGPTApiModel = dialog.apiModel()
+            config.chatGPTApiFunctionCall = dialog.functionCalling()
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContextInAllInputs = dialog.contextInAllInputs()
             config.chatGPTApiContext = dialog.context()
@@ -895,13 +909,16 @@ Follow the following steps:
                 print("Failed to run '{0}'!".format(os.path.basename(script)))
 
     def runPlugins(self):
-        # users can modify config.predefinedContexts, config.inputSuggestions and config.chatGPTTransformers via plugins
+        # The following config values can be modified with plugins, to extend functionalities
         config.predefinedContexts = {
             "[none]": "",
             "[custom]": "",
         }
         config.inputSuggestions = []
         config.chatGPTTransformers = []
+        config.chatGPTApiFunctionSignatures = []
+        config.chatGPTApiAvailableFunctions = {}
+
         pluginFolder = os.path.join(os.getcwd(), "plugins")
         for plugin in self.fileNamesWithoutExtension(pluginFolder, "py"):
             script = os.path.join(pluginFolder, "{0}.py".format(plugin))
@@ -1131,7 +1148,16 @@ if __name__ == '__main__':
     def aboutToQuit():
         with open("config.py", "w", encoding="utf-8") as fileObj:
             for name in dir(config):
-                if not name.startswith("__") and not name in ("mainWindow", "chatGPTApi", "chatGPTTransformers", "predefinedContext", "predefinedContexts", "inputSuggestions"):
+                excludeFromSavingList = (
+                    "mainWindow", # main window object
+                    "chatGPTApi", # GUI object
+                    "chatGPTTransformers", # used with plugins; transform ChatGPT response message
+                    "predefinedContexts", # used with plugins; pre-defined contexts
+                    "inputSuggestions", # used with plugins; user input suggestions
+                    "chatGPTApiFunctionSignatures", # used with plugins; function calling
+                    "chatGPTApiAvailableFunctions", # used with plugins; function calling
+                )
+                if not name.startswith("__") and not name in excludeFromSavingList:
                     try:
                         value = eval(f"config.{name}")
                         fileObj.write("{0} = {1}\n".format(name, pprint.pformat(value)))

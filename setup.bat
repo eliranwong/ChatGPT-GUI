@@ -1,4 +1,4 @@
 python -m venv venv
 .\venv\Scripts\activate
-pip3 install PySide6 openai gtts pyqtdarktheme
+pip3 install --upgrade PySide6 openai tiktoken gtts pyqtdarktheme duckduckgo-search
 python ChatGPT-GUI.py

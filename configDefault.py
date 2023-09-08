@@ -75,6 +75,7 @@ def setConfig():
         ('chatGPTApiMaxTokens', 512),
         ('chatGPTApiNoOfChoices', 1),
         ('chatGPTApiTemperature', 0.8),
+        ('chatGPTApiFunctionCall', "none"),
         ('darkTheme', True),
         ('developer', False),
         ('enableSystemTray', False),
