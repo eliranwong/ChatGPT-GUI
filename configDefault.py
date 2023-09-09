@@ -68,7 +68,8 @@ def setConfig():
         'textSelection': 'Text Selection',
         'webBrowser': 'Web Browser',
         'runAsSystemCommand': 'Run as System Command',
-        'runAsPythonCommand': 'Run as Python Command',
+        'runAsPythonCommand': 'Execute as Python Script',
+        'plugins': 'Plugins',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
@@ -97,6 +98,7 @@ def setConfig():
         ('chatGPTApiContextInAllInputs', False),
         ('chatGPTApiAutoScrolling', True),
         ('thisTranslation', thisTranslation),
+        ('chatGPTPluginExcludeList', ['testing_function_calling']),
     )
     for key, value in defaultSettings:
         if not hasattr(config, key):

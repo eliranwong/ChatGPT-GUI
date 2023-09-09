@@ -1013,8 +1013,9 @@ Follow the following steps:
 
         pluginFolder = os.path.join(os.getcwd(), "plugins")
         for plugin in self.fileNamesWithoutExtension(pluginFolder, "py"):
-            script = os.path.join(pluginFolder, "{0}.py".format(plugin))
-            self.execPythonFile(script)
+            if not plugin in config.chatGPTPluginExcludeList:
+                script = os.path.join(pluginFolder, "{0}.py".format(plugin))
+                self.execPythonFile(script)
 
     def processResponse(self, responses):
         if responses:
@@ -1188,20 +1189,43 @@ class MainWindow(QMainWindow):
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
 
+        # Create a plugin menu
+        plugin_menu = menubar.addMenu(config.thisTranslation["plugins"])
+
+        pluginFolder = os.path.join(os.getcwd(), "plugins")
+        for index, plugin in enumerate(self.fileNamesWithoutExtension(pluginFolder, "py")):
+            new_action = QAction(plugin, self)
+            new_action.setCheckable(True)
+            new_action.setChecked(False if plugin in config.chatGPTPluginExcludeList else True)
+            new_action.triggered.connect(partial(self.updateExcludePluginList, plugin))
+            plugin_menu.addAction(new_action)
+
         # Create a text selection menu
-        file_menu = menubar.addMenu(config.thisTranslation["textSelection"])
+        text_selection_menu = menubar.addMenu(config.thisTranslation["textSelection"])
 
         new_action = QAction(config.thisTranslation["webBrowser"], self)
         new_action.triggered.connect(self.chatGPT.webBrowse)
-        file_menu.addAction(new_action)
+        text_selection_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["runAsPythonCommand"], self)
         new_action.triggered.connect(self.chatGPT.runPythonCommand)
-        file_menu.addAction(new_action)
+        text_selection_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["runAsSystemCommand"], self)
         new_action.triggered.connect(self.chatGPT.runSystemCommand)
-        file_menu.addAction(new_action)
+        text_selection_menu.addAction(new_action)
+
+    def updateExcludePluginList(self, plugin):
+        if plugin in config.chatGPTPluginExcludeList:
+            config.chatGPTPluginExcludeList.remove(plugin)
+        else:
+            config.chatGPTPluginExcludeList.append(plugin)
+        # reload plugins
+        config.chatGPTApi.runPlugins()
+
+    def fileNamesWithoutExtension(self, dir, ext):
+        files = glob.glob(os.path.join(dir, "*.{0}".format(ext)))
+        return sorted([file[len(dir)+1:-(len(ext)+1)] for file in files if os.path.isfile(file)])
 
     def getOpenCommand(self):
         thisOS = platform.system()
