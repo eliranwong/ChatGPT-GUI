@@ -911,8 +911,9 @@ Follow the following steps:
 
     def getMessages(self, userInput):
         # system message
+        systemMessage = "You’re a kind helpful assistant. Only use the functions you have been provided with." if config.chatGPTApiFunctionCall == "auto" and config.chatGPTApiFunctionSignatures else "You’re a kind helpful assistant."
         messages = [
-            {"role": "system", "content": "You’re a kind helpful assistant"}
+            {"role": "system", "content": systemMessage}
         ]
         # predefine context
         context = self.getContext()
