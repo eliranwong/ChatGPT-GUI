@@ -1,4 +1,6 @@
-import os, shutil, platform, ctypes, glob
+import os, shutil, platform, ctypes, glob, subprocess, traceback
+import urllib.parse
+from io import StringIO
 from duckduckgo_search import ddg
 from functools import partial
 # set working directory
@@ -379,7 +381,7 @@ class ChatGPTAPI(QWidget):
         searchReplaceButtonAll = QPushButton(config.thisTranslation["all"])
         searchReplaceButtonAll.setToolTip(config.thisTranslation["replaceAll"])
         self.apiModels = QComboBox()
-        self.apiModels.addItems([config.thisTranslation["chat"], config.thisTranslation["image"]])
+        self.apiModels.addItems([config.thisTranslation["chat"], config.thisTranslation["image"], "browser", "python", "system"])
         self.apiModels.setCurrentIndex(0)
         self.apiModel = 0
         self.newButton = QPushButton(config.thisTranslation["new"])
@@ -619,6 +621,84 @@ class ChatGPTAPI(QWidget):
         if not config.chatGPTApiAudio:
             self.closeMediaPlayer()
 
+    def noTextSelection(self):
+        self.displayMessage("This feature works on text selection. Select text first!")
+
+    def validate_url(self, url):
+        try:
+            result = urllib.parse.urlparse(url)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
+
+    def webBrowse(self, userInput=""):
+        if not userInput:
+            userInput = self.contentView.textCursor().selectedText().strip()
+        if not userInput:
+            self.noTextSelection()
+            return
+        if not self.validate_url(userInput):
+            userInput = urllib.parse.quote(userInput)
+            url = f"https://www.google.com/search?q={userInput}"
+        webbrowser.open(url)
+
+    def displayText(self, text):
+        self.saveData()
+        self.newData()
+        self.contentView.setPlainText(text)
+
+    def runSystemCommand(self, command=""):
+        if not command:
+            command = self.contentView.textCursor().selectedText().strip()
+        if not command:
+            self.noTextSelection()
+            return
+        
+        # display output only, without error
+        #output = subprocess.check_output(command, shell=True, text=True)
+        #self.displayText(output)
+
+        # display both output and error
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        output = result.stdout  # Captured standard output
+        error = result.stderr  # Captured standard error
+        self.displayText(f"> {command}")
+        self.contentView.appendPlainText(f"\n{output}")
+        if error.strip():
+            self.contentView.appendPlainText("\n# Error\n")
+            self.contentView.appendPlainText(error)
+
+    def runPythonCommand(self, command=""):
+        if not command:
+            command = self.contentView.textCursor().selectedText().strip()
+        if not command:
+            self.noTextSelection()
+            return
+
+        # Store the original standard output
+        original_stdout = sys.stdout
+        # Create a StringIO object to capture the output
+        output = StringIO()
+        try:
+            # Redirect the standard output to the StringIO object
+            sys.stdout = output
+            # Execute the Python string in global namespace
+            try:
+                exec(command, globals())
+                captured_output = output.getvalue()
+            except:
+                captured_output = traceback.format_exc()
+            # Get the captured output
+        finally:
+            # Restore the original standard output
+            sys.stdout = original_stdout
+
+        # Display the captured output
+        if captured_output.strip():
+            self.displayText(captured_output)
+        else:
+            self.displayMessage("Done!")
+
     def removeData(self):
         index = self.listView.selectedIndexes()
         if not index:
@@ -852,8 +932,20 @@ Follow the following steps:
             self.multilineButtonClicked()
         if self.apiModel == 0:
             self.getResponse()
-        else:
+        elif self.apiModel == 1:
             self.getImage()
+        elif self.apiModel == 2:
+            userInput = self.userInput.text().strip()
+            if userInput:
+                self.webBrowse(userInput)
+        elif self.apiModel == 3:
+            userInput = self.userInput.text().strip()
+            if userInput:
+                self.runPythonCommand(userInput)
+        elif self.apiModel == 4:
+            userInput = self.userInput.text().strip()
+            if userInput:
+                self.runSystemCommand(userInput)
 
     def getImage(self):
         if not self.progressBar.isVisible():
@@ -1015,6 +1107,11 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.openDatabaseDirectory)
         file_menu.addAction(new_action)
 
+        new_action = QAction(config.thisTranslation["pluginDirectory"], self)
+        new_action.setShortcut("Ctrl+O")
+        new_action.triggered.connect(self.openPluginsDirectory)
+        file_menu.addAction(new_action)
+
         file_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["newChat"], self)
@@ -1091,8 +1188,22 @@ class MainWindow(QMainWindow):
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
 
-    def openDatabaseDirectory(self):
-        databaseDirectory = os.path.dirname(os.path.abspath(config.chatGPTApiLastChatDatabase))
+        # Create a text selection menu
+        file_menu = menubar.addMenu(config.thisTranslation["textSelection"])
+
+        new_action = QAction(config.thisTranslation["webBrowser"], self)
+        new_action.triggered.connect(self.chatGPT.webBrowse)
+        file_menu.addAction(new_action)
+
+        new_action = QAction(config.thisTranslation["runAsPythonCommand"], self)
+        new_action.triggered.connect(self.chatGPT.runPythonCommand)
+        file_menu.addAction(new_action)
+
+        new_action = QAction(config.thisTranslation["runAsSystemCommand"], self)
+        new_action.triggered.connect(self.chatGPT.runSystemCommand)
+        file_menu.addAction(new_action)
+
+    def getOpenCommand(self):
         thisOS = platform.system()
         if thisOS == "Windows":
             openCommand = "start"
@@ -1100,7 +1211,16 @@ class MainWindow(QMainWindow):
             openCommand = "open"
         elif thisOS == "Linux":
             openCommand = "xdg-open"
+        return openCommand
+
+    def openDatabaseDirectory(self):
+        databaseDirectory = os.path.dirname(os.path.abspath(config.chatGPTApiLastChatDatabase))
+        openCommand = self.getOpenCommand()
         os.system(f"{openCommand} {databaseDirectory}")
+
+    def openPluginsDirectory(self):
+        openCommand = self.getOpenCommand()
+        os.system(f"{openCommand} plugins")
 
     def toggleRegexp(self):
         config.regexpSearchEnabled = not config.regexpSearchEnabled

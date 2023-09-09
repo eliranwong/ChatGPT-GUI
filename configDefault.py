@@ -53,6 +53,7 @@ def setConfig():
         'replaceAll': 'Replace All',
         'toggleRegexp': 'Toggle Regular Expression',
         'fileManager': 'Database Directory',
+        'pluginDirectory': 'Plugins Directory',
         'predefinedContext': 'Predefined Context',
         'toggleMultilineInput': 'Toggle Multiline User Input',
         'latestOnlineSearchResults': 'Latest Online Search Results',
@@ -64,6 +65,10 @@ def setConfig():
         'autoScroll': 'Auto Scroll',
         'enable': 'Enable',
         'countPromptTokens': 'Count Prompt Tokens',
+        'textSelection': 'Text Selection',
+        'webBrowser': 'Web Browser',
+        'runAsSystemCommand': 'Run as System Command',
+        'runAsPythonCommand': 'Run as Python Command',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
