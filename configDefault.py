@@ -98,7 +98,7 @@ def setConfig():
         ('chatGPTApiContextInAllInputs', False),
         ('chatGPTApiAutoScrolling', True),
         ('thisTranslation', thisTranslation),
-        ('chatGPTPluginExcludeList', ['testing_function_calling']),
+        ('chatGPTPluginExcludeList', ['testing_function_calling', 'zzz_automation_example']),
     )
     for key, value in defaultSettings:
         if not hasattr(config, key):
