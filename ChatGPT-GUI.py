@@ -104,13 +104,15 @@ class ApiDialog(QDialog):
         self.autoScrollingCheckBox = QCheckBox(config.thisTranslation["enable"])
         self.autoScrollingCheckBox.setToolTip("Auto-scroll display as responses are received")
         self.autoScrollingCheckBox.setCheckState(Qt.Checked if config.chatGPTApiAutoScrolling else Qt.Unchecked)
+        self.chatGPTApiAutoScrolling = config.chatGPTApiAutoScrolling
         self.chatAfterFunctionCalledCheckBox = QCheckBox(config.thisTranslation["enable"])
         self.chatAfterFunctionCalledCheckBox.setToolTip("Automatically generate next chat response after a function is called")
         self.chatAfterFunctionCalledCheckBox.setCheckState(Qt.Checked if config.chatAfterFunctionCalled else Qt.Unchecked)
+        self.chatAfterFunctionCalled = config.chatAfterFunctionCalled
         self.runPythonScriptGloballyCheckBox = QCheckBox(config.thisTranslation["enable"])
         self.runPythonScriptGloballyCheckBox.setToolTip("Run user python script in global scope")
         self.runPythonScriptGloballyCheckBox.setCheckState(Qt.Checked if config.runPythonScriptGlobally else Qt.Unchecked)
-        self.chatGPTApiAutoScrolling = config.chatGPTApiAutoScrolling
+        self.runPythonScriptGlobally = config.runPythonScriptGlobally
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
         firstInputOnly = config.thisTranslation["firstInputOnly"]
         allInputs = config.thisTranslation["allInputs"]
@@ -1141,12 +1143,10 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["fileManager"], self)
-        new_action.setShortcut("Ctrl+O")
         new_action.triggered.connect(self.openDatabaseDirectory)
         file_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["pluginDirectory"], self)
-        new_action.setShortcut("Ctrl+O")
         new_action.triggered.connect(self.openPluginsDirectory)
         file_menu.addAction(new_action)
 
@@ -1192,32 +1192,32 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(QGuiApplication.instance().quit)
         file_menu.addAction(exit_action)
 
-        # Create customi menu
-        file_menu = menubar.addMenu(config.thisTranslation["customise"])
+        # Create customise menu
+        customise_menu = menubar.addMenu(config.thisTranslation["customise"])
 
         openSettings = QAction(config.thisTranslation["configure"], self)
         openSettings.triggered.connect(self.chatGPT.showApiDialog)
-        file_menu.addAction(openSettings)
+        customise_menu.addAction(openSettings)
 
-        file_menu.addSeparator()
+        customise_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["toggleDarkTheme"], self)
         new_action.triggered.connect(self.toggleTheme)
-        file_menu.addAction(new_action)
+        customise_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["toggleSystemTray"], self)
         new_action.triggered.connect(self.toggleSystemTray)
-        file_menu.addAction(new_action)
+        customise_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["toggleMultilineInput"], self)
         new_action.setShortcut("Ctrl+L")
         new_action.triggered.connect(self.chatGPT.multilineButtonClicked)
-        file_menu.addAction(new_action)
+        customise_menu.addAction(new_action)
 
         new_action = QAction(config.thisTranslation["toggleRegexp"], self)
         new_action.setShortcut("Ctrl+E")
         new_action.triggered.connect(self.toggleRegexp)
-        file_menu.addAction(new_action)
+        customise_menu.addAction(new_action)
 
         # Create predefined context menu
         context_menu = menubar.addMenu(config.thisTranslation["predefinedContext"])
@@ -1254,24 +1254,24 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.chatGPT.runSystemCommand)
         text_selection_menu.addAction(new_action)
 
-        # Create customi menu
-        file_menu = menubar.addMenu(config.thisTranslation["about"])
+        # Create About menu
+        about_menu = menubar.addMenu(config.thisTranslation["about"])
 
         openSettings = QAction(config.thisTranslation["repository"], self)
         openSettings.triggered.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI"))
-        file_menu.addAction(openSettings)
+        about_menu.addAction(openSettings)
 
-        file_menu.addSeparator()
+        about_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["help"], self)
         new_action.triggered.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/wiki"))
-        file_menu.addAction(new_action)
+        about_menu.addAction(new_action)
 
-        file_menu.addSeparator()
+        about_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["donate"], self)
         new_action.triggered.connect(lambda: webbrowser.open("https://www.paypal.com/paypalme/MarvelBible"))
-        file_menu.addAction(new_action)
+        about_menu.addAction(new_action)
 
         # set initial window size
         #self.setWindowTitle("ChatGPT-GUI")

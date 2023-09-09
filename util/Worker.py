@@ -88,7 +88,7 @@ class ChatGPTResponse:
     def getResponse(self, messages, progress_callback):
         responses = ""
         try:
-            if config.chatGPTApiNoOfChoices == 1 and config.chatGPTApiFunctionCall == "none":
+            if config.chatGPTApiNoOfChoices == 1 and (config.chatGPTApiFunctionCall == "none" or not config.chatGPTApiFunctionSignatures):
                 completion = openai.ChatCompletion.create(
                     model=config.chatGPTApiModel,
                     messages=messages,
@@ -110,15 +110,24 @@ class ChatGPTResponse:
                     # STREAM THE ANSWER
                     progress_callback.emit(progress)
             else:
-                completion = openai.ChatCompletion.create(
-                    model=config.chatGPTApiModel,
-                    messages=messages,
-                    max_tokens=config.chatGPTApiMaxTokens,
-                    temperature=config.chatGPTApiTemperature,
-                    n=config.chatGPTApiNoOfChoices,
-                    functions=config.chatGPTApiFunctionSignatures,
-                    function_call="none" if not config.chatGPTApiFunctionSignatures else config.chatGPTApiFunctionCall,
-                )
+                if config.chatGPTApiFunctionSignatures:
+                    completion = openai.ChatCompletion.create(
+                        model=config.chatGPTApiModel,
+                        messages=messages,
+                        max_tokens=config.chatGPTApiMaxTokens,
+                        temperature=config.chatGPTApiTemperature,
+                        n=config.chatGPTApiNoOfChoices,
+                        functions=config.chatGPTApiFunctionSignatures,
+                        function_call=config.chatGPTApiFunctionCall,
+                    )
+                else:
+                    completion = openai.ChatCompletion.create(
+                        model=config.chatGPTApiModel,
+                        messages=messages,
+                        max_tokens=config.chatGPTApiMaxTokens,
+                        temperature=config.chatGPTApiTemperature,
+                        n=config.chatGPTApiNoOfChoices,
+                    )
 
                 response_message = completion["choices"][0]["message"]
                 if response_message.get("function_call"):
@@ -140,7 +149,7 @@ class ChatGPTResponse:
                             "content": function_response,
                         }
                     )  # extend conversation with function response
-                    if config.continueChatAfterFunctionCalled:
+                    if config.chatAfterFunctionCalled:
                         return self.getResponse(messages, progress_callback)
                     else:
                         responses += f"{function_response}\n\n"
