@@ -70,6 +70,13 @@ def setConfig():
         'runAsSystemCommand': 'Run as System Command',
         'runAsPythonCommand': 'Execute as Python Script',
         'plugins': 'Plugins',
+        'chatAfterFunctionCalled': 'Chat with Function Response',
+        'runPythonScriptGlobally': 'Run Python Script Globally',
+        'readTextFile': 'Read Text File',
+        'customise': 'Customise',
+        'repository': 'Repository',
+        'about': 'About',
+        'donate': 'Donate',
     }
     defaultSettings = (
         ('chatGPTApiAudio', 0),
@@ -82,6 +89,8 @@ def setConfig():
         ('chatGPTApiNoOfChoices', 1),
         ('chatGPTApiTemperature', 0.8),
         ('chatGPTApiFunctionCall', "none"),
+        ('chatAfterFunctionCalled', True),
+        ('runPythonScriptGlobally', False),
         ('darkTheme', True),
         ('developer', False),
         ('enableSystemTray', False),

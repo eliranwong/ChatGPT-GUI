@@ -117,7 +117,7 @@ class ChatGPTResponse:
                     temperature=config.chatGPTApiTemperature,
                     n=config.chatGPTApiNoOfChoices,
                     functions=config.chatGPTApiFunctionSignatures,
-                    function_call=config.chatGPTApiFunctionCall,
+                    function_call="none" if not config.chatGPTApiFunctionSignatures else config.chatGPTApiFunctionCall,
                 )
 
                 response_message = completion["choices"][0]["message"]
@@ -140,15 +140,19 @@ class ChatGPTResponse:
                             "content": function_response,
                         }
                     )  # extend conversation with function response
-                    return self.getResponse(messages, progress_callback)
+                    if config.continueChatAfterFunctionCalled:
+                        return self.getResponse(messages, progress_callback)
+                    else:
+                        responses += f"{function_response}\n\n"
 
                 for index, choice in enumerate(completion.choices):
                     chat_response = choice.message.content
-                    if len(completion.choices) > 1:
-                        if index > 0:
-                            responses += "\n"
-                        responses += f"~~~ Response {(index+1)}:\n"
-                    responses += f"{chat_response}\n\n"
+                    if chat_response:
+                        if len(completion.choices) > 1:
+                            if index > 0:
+                                responses += "\n"
+                            responses += f"~~~ Response {(index+1)}:\n"
+                        responses += f"{chat_response}\n\n"
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:
             #Handle API error here, e.g. retry or log
