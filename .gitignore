@@ -1,5 +1,6 @@
 **/__pycache__/**
 /temp*
+/db*
 /venv*
 /venv_*
 config.py
