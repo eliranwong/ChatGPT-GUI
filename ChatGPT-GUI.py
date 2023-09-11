@@ -216,10 +216,10 @@ class ApiDialog(QDialog):
     def toggleRunPythonScriptGlobally(self, state):
         self.runPythonScriptGlobally = True if state else False
 
+    """
     def include_internet_searches(self):
         return self.includeDuckDuckGoSearchResults
 
-    """
     def toggleIncludeDuckDuckGoSearchResults(self, state):
         self.includeDuckDuckGoSearchResults = True if state else False"""
 
@@ -613,6 +613,8 @@ class ChatGPTAPI(QWidget):
                 config.maximumInternetSearchResults = int(dialog.max_internet_search_results())
                 if config.maximumInternetSearchResults <= 0:
                     config.maximumInternetSearchResults = 1
+                elif config.maximumInternetSearchResults > 100:
+                    config.maximumInternetSearchResults = 100
             except:
                 pass
             #config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
@@ -939,7 +941,7 @@ Follow the following steps:
             userInput = f"{context}\n{userInput}"
         # user input
         # old way to include internet search result
-        # it is now replaced by plugin "include google searches"
+        # it is now replaced by plugin "integrate google searches"
         """
         if config.includeDuckDuckGoSearchResults:
             results = ddg(userInput, time='y', max_results=config.maximumDuckDuckGoSearchResults)
