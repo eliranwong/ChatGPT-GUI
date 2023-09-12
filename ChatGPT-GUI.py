@@ -668,7 +668,9 @@ class ChatGPTAPI(QWidget):
         if not userInput:
             self.noTextSelection()
             return
-        if not self.validate_url(userInput):
+        if self.validate_url(userInput):
+            url = userInput
+        else:
             userInput = urllib.parse.quote(userInput)
             url = f"https://www.google.com/search?q={userInput}"
         webbrowser.open(url)
