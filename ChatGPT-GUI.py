@@ -1371,6 +1371,7 @@ if __name__ == '__main__':
                     "inputSuggestions", # used with plugins; user input suggestions
                     "chatGPTApiFunctionSignatures", # used with plugins; function calling
                     "chatGPTApiAvailableFunctions", # used with plugins; function calling
+                    "pythonFunctionResponse", # used with plugins; function calling when function name is 'python'
                 )
                 if not name.startswith("__") and not name in excludeFromSavingList:
                     try:

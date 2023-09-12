@@ -132,9 +132,33 @@ class ChatGPTResponse:
                 response_message = completion["choices"][0]["message"]
                 if response_message.get("function_call"):
                     function_name = response_message["function_call"]["name"]
-                    fuction_to_call = config.chatGPTApiAvailableFunctions[function_name]
-                    function_args = json.loads(response_message["function_call"]["arguments"])
-                    function_response = fuction_to_call(function_args)
+                    if function_name == "python":
+                        config.pythonFunctionResponse = ""
+                        function_args = response_message["function_call"]["arguments"]
+                        insert_string = "import config\nconfig.pythonFunctionResponse = "
+                        if "\n" in function_args:
+                            substrings = function_args.rsplit("\n", 1)
+                            new_function_args = f"{substrings[0]}\n{insert_string}{substrings[-1]}"
+                        else:
+                            new_function_args = f"{insert_string}{function_args}"
+                        try:
+                            exec(new_function_args, globals())
+                            function_response = str(config.pythonFunctionResponse)
+                        except:
+                            function_response = function_args
+                        info = {"information": function_response}
+                        function_response = json.dumps(info)
+                    else:
+                        #if not function_name in config.chatGPTApiAvailableFunctions:
+                        #    print("unexpected function name: ", function_name)
+                        fuction_to_call = config.chatGPTApiAvailableFunctions.get(function_name, "integrate_google_searches")
+                        try:
+                            function_args = json.loads(response_message["function_call"]["arguments"])
+                        except:
+                            function_args = response_message["function_call"]["arguments"]
+                            if function_name == "integrate_google_searches":
+                                function_args = {"keywords": function_args}
+                        function_response = fuction_to_call(function_args)
                     
                     # check function response
                     # print("Got this function response:", function_response)
