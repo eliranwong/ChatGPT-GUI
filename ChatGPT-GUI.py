@@ -1,7 +1,6 @@
 import os, shutil, platform, ctypes, glob, subprocess, traceback
 import urllib.parse
 from io import StringIO
-from duckduckgo_search import ddg
 from functools import partial
 # set working directory
 thisFile = os.path.realpath(__file__)
@@ -93,6 +92,15 @@ class ApiDialog(QDialog):
                 initialIndex = index
             index += 1
         self.functionCallingBox.setCurrentIndex(initialIndex)
+        self.loadingInternetSearchesBox = QComboBox()
+        initialIndex = 0
+        index = 0
+        for key in ("always", "auto", "none"):
+            self.loadingInternetSearchesBox.addItem(key)
+            if key == config.loadingInternetSearches:
+                initialIndex = index
+            index += 1
+        self.loadingInternetSearchesBox.setCurrentIndex(initialIndex)
         self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
         self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
         self.maxInternetSearchResults = QLineEdit(str(config.maximumInternetSearchResults))
@@ -157,15 +165,16 @@ class ApiDialog(QDialog):
         layout.addRow(f"{predefinedContext} [{optional}]:", self.predefinedContextBox)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
         layout.addRow(f"{applyContext} [{optional}]:", self.applyContextIn)
-        #layout.addRow(f"{latestOnlineSearchResults} [{optional}]:", self.includeInternetSearches)
+        layout.addRow(f"{latestOnlineSearchResults} [{optional}]:", self.loadingInternetSearchesBox)
         layout.addRow(f"{maximumOnlineSearchResults} [{optional}]:", self.maxInternetSearchResults)
         layout.addRow(f"{autoScroll} [{optional}]:", self.autoScrollingCheckBox)
         layout.addRow(f"{runPythonScriptGlobally} [{optional}]:", self.runPythonScriptGloballyCheckBox)
         layout.addWidget(buttonBox)
-        #self.includeInternetSearches.stateChanged.connect(self.toggleIncludeDuckDuckGoSearchResults)
         self.autoScrollingCheckBox.stateChanged.connect(self.toggleAutoScrollingCheckBox)
         self.chatAfterFunctionCalledCheckBox.stateChanged.connect(self.toggleChatAfterFunctionCalled)
         self.runPythonScriptGloballyCheckBox.stateChanged.connect(self.toggleRunPythonScriptGlobally)
+        self.functionCallingBox.currentIndexChanged.connect(self.functionCallingBoxChanged)
+        self.loadingInternetSearchesBox.currentIndexChanged.connect(self.loadingInternetSearchesBoxChanged)
 
         self.setLayout(layout)
 
@@ -216,12 +225,19 @@ class ApiDialog(QDialog):
     def toggleRunPythonScriptGlobally(self, state):
         self.runPythonScriptGlobally = True if state else False
 
-    """
-    def include_internet_searches(self):
-        return self.includeDuckDuckGoSearchResults
+    def functionCallingBoxChanged(self):
+        if self.functionCallingBox.currentText() == "none" and self.loadingInternetSearchesBox.currentText() == "auto":
+            self.loadingInternetSearchesBox.setCurrentText("none")
 
-    def toggleIncludeDuckDuckGoSearchResults(self, state):
-        self.includeDuckDuckGoSearchResults = True if state else False"""
+    def loadingInternetSearches(self):
+        return self.loadingInternetSearchesBox.currentText()
+
+    def loadingInternetSearchesBoxChanged(self, _):
+        if self.loadingInternetSearchesBox.currentText() == "auto":
+            self.functionCallingBox.setCurrentText("auto")
+
+    def max_token(self):
+        return self.maxTokenEdit.text().strip()
 
     def max_internet_search_results(self):
         return self.maxInternetSearchResults.text().strip()
@@ -623,6 +639,15 @@ class ChatGPTAPI(QWidget):
             config.chatAfterFunctionCalled = dialog.enable_chatAfterFunctionCalled()
             config.chatGPTApiModel = dialog.apiModel()
             config.chatGPTApiFunctionCall = dialog.functionCalling()
+            config.loadingInternetSearches = dialog.loadingInternetSearches()
+            internetSeraches = "integrate google searches"
+            if config.loadingInternetSearches == "auto" and internetSeraches in config.chatGPTPluginExcludeList:
+                config.chatGPTPluginExcludeList.remove(internetSeraches)
+                config.mainWindow.reloadMenubar()
+            elif config.loadingInternetSearches == "none" and not internetSeraches in config.chatGPTPluginExcludeList:
+                config.chatGPTPluginExcludeList.append(internetSeraches)
+                config.mainWindow.reloadMenubar()
+            self.runPlugins()
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContextInAllInputs = dialog.contextInAllInputs()
             config.chatGPTApiContext = dialog.context()
@@ -1061,10 +1086,16 @@ Follow the following steps:
         config.chatGPTApiAvailableFunctions = {}
 
         pluginFolder = os.path.join(os.getcwd(), "plugins")
+        # always run 'integrate google searches'
+        internetSeraches = "integrate google searches"
+        script = os.path.join(pluginFolder, "{0}.py".format(internetSeraches))
+        self.execPythonFile(script)
         for plugin in self.fileNamesWithoutExtension(pluginFolder, "py"):
-            if not plugin in config.chatGPTPluginExcludeList:
+            if not plugin == internetSeraches and not plugin in config.chatGPTPluginExcludeList:
                 script = os.path.join(pluginFolder, "{0}.py".format(plugin))
                 self.execPythonFile(script)
+        if internetSeraches in config.chatGPTPluginExcludeList:
+            del config.chatGPTApiFunctionSignatures[0]
 
     def processResponse(self, responses):
         if responses:
@@ -1124,11 +1155,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.initUI()
 
-    def initUI(self):
-        # Set a central widget
-        self.chatGPT = ChatGPTAPI(self)
-        self.setCentralWidget(self.chatGPT)
+    def reloadMenubar(self):
+        self.menuBar().clear()
+        self.createMenubar()
 
+    def createMenubar(self):
         # Create a menu bar
         menubar = self.menuBar()
 
@@ -1283,6 +1314,17 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(lambda: webbrowser.open("https://www.paypal.com/paypalme/MarvelBible"))
         about_menu.addAction(new_action)
 
+        
+
+
+    def initUI(self):
+        # Set a central widget
+        self.chatGPT = ChatGPTAPI(self)
+        self.setCentralWidget(self.chatGPT)
+
+        # create menu bar
+        self.createMenubar()
+
         # set initial window size
         #self.setWindowTitle("ChatGPT-GUI")
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
@@ -1293,6 +1335,12 @@ class MainWindow(QMainWindow):
             config.chatGPTPluginExcludeList.remove(plugin)
         else:
             config.chatGPTPluginExcludeList.append(plugin)
+        internetSeraches = "integrate google searches"
+        if internetSeraches in config.chatGPTPluginExcludeList and config.loadingInternetSearches == "auto":
+            config.loadingInternetSearches = "none"
+        elif not internetSeraches in config.chatGPTPluginExcludeList and config.loadingInternetSearches == "none":
+            config.loadingInternetSearches = "auto"
+            config.chatGPTApiFunctionCall = "auto"
         # reload plugins
         config.chatGPTApi.runPlugins()
 
@@ -1371,6 +1419,7 @@ if __name__ == '__main__':
                     "chatGPTTransformers", # used with plugins; transform ChatGPT response message
                     "predefinedContexts", # used with plugins; pre-defined contexts
                     "inputSuggestions", # used with plugins; user input suggestions
+                    "integrate_google_searches_signature",
                     "chatGPTApiFunctionSignatures", # used with plugins; function calling
                     "chatGPTApiAvailableFunctions", # used with plugins; function calling
                     "pythonFunctionResponse", # used with plugins; function calling when function name is 'python'

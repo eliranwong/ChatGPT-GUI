@@ -84,9 +84,39 @@ class ChatGPTResponse:
         super().__init__()
         self.parent = parent
         self.threadpool = QThreadPool()
+        self.forceLoadingInternetSearches = True
 
     def getResponse(self, messages, progress_callback):
         responses = ""
+        if config.loadingInternetSearches == "always" and self.forceLoadingInternetSearches:
+            #print("loading internet searches ...")
+            try:
+                self.forceLoadingInternetSearches = False
+                completion = openai.ChatCompletion.create(
+                    model=config.chatGPTApiModel,
+                    messages=messages,
+                    max_tokens=config.chatGPTApiMaxTokens,
+                    temperature=config.chatGPTApiTemperature,
+                    n=1,
+                    functions=config.integrate_google_searches_signature,
+                    function_call={"name": "integrate_google_searches"},
+                )
+                response_message = completion["choices"][0]["message"]
+                if response_message.get("function_call"):
+                    function_args = json.loads(response_message["function_call"]["arguments"])
+                    fuction_to_call = config.chatGPTApiAvailableFunctions.get("integrate_google_searches")
+                    function_response = fuction_to_call(function_args)
+                    messages.append(response_message) # extend conversation with assistant's reply
+                    messages.append(
+                        {
+                            "role": "function",
+                            "name": "integrate_google_searches",
+                            "content": function_response,
+                        }
+                    )
+                    return self.getResponse(messages, progress_callback)
+            except:
+                print("Unable to load internet resources.")
         try:
             if config.chatGPTApiNoOfChoices == 1 and (config.chatGPTApiFunctionCall == "none" or not config.chatGPTApiFunctionSignatures):
                 completion = openai.ChatCompletion.create(

@@ -104,6 +104,7 @@ def setConfig():
         ('regexpSearchEnabled', True),
         #('includeDuckDuckGoSearchResults', False),
         #('maximumDuckDuckGoSearchResults', 5),
+        ('loadingInternetSearches', "none"),
         ('maximumInternetSearchResults', 5),
         ('chatGPTApiContextInAllInputs', False),
         ('chatGPTApiAutoScrolling', True),
