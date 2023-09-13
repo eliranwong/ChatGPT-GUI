@@ -643,10 +643,10 @@ class ChatGPTAPI(QWidget):
             internetSeraches = "integrate google searches"
             if config.loadingInternetSearches == "auto" and internetSeraches in config.chatGPTPluginExcludeList:
                 config.chatGPTPluginExcludeList.remove(internetSeraches)
-                config.mainWindow.reloadMenubar()
+                self.parent.reloadMenubar()
             elif config.loadingInternetSearches == "none" and not internetSeraches in config.chatGPTPluginExcludeList:
                 config.chatGPTPluginExcludeList.append(internetSeraches)
-                config.mainWindow.reloadMenubar()
+                self.parent.reloadMenubar()
             self.runPlugins()
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContextInAllInputs = dialog.contextInAllInputs()
