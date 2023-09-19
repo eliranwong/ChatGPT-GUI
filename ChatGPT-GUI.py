@@ -729,7 +729,10 @@ class ChatGPTAPI(QWidget):
     def runPythonCommand(self, command=""):
         if not command:
             command = self.contentView.textCursor().selectedText().strip()
-        if not command:
+        if command:
+            command = repr(command)
+            command = eval(command).replace("\u2029", "\n")
+        else:
             self.noTextSelection()
             return
 
@@ -937,11 +940,19 @@ Follow the following steps:
         else:
             # users can modify config.predefinedContexts via plugins
             context = config.predefinedContexts[config.chatGPTApiPredefinedContext]
+            # change config for particular contexts
+            if config.chatGPTApiPredefinedContext == "Execute Python Code":
+                if config.chatGPTApiFunctionCall == "none":
+                    config.chatGPTApiFunctionCall = "auto"
+                if config.loadingInternetSearches == "always":
+                    config.loadingInternetSearches = "auto"
         return context
 
     def getMessages(self, userInput):
         # system message
-        systemMessage = "You’re a kind helpful assistant. Only use the functions you have been provided with." if config.chatGPTApiFunctionCall == "auto" and config.chatGPTApiFunctionSignatures else "You’re a kind helpful assistant."
+        systemMessage = "You’re a kind helpful assistant."
+        if config.chatGPTApiFunctionCall == "auto" and config.chatGPTApiFunctionSignatures:
+            systemMessage += " Only use the functions you have been provided with."
         messages = [
             {"role": "system", "content": systemMessage}
         ]
@@ -950,7 +961,7 @@ Follow the following steps:
         # chat history
         history = self.contentView.toPlainText().strip()
         if history:
-            if context and not config.chatGPTApiContextInAllInputs:
+            if context and not config.chatGPTApiPredefinedContext == "Execute Python Code" and not config.chatGPTApiContextInAllInputs:
                 messages.append({"role": "assistant", "content": context})
             if history.startswith(">>> "):
                 history = history[4:]
@@ -963,24 +974,10 @@ Follow the following steps:
                     else:
                         messages.append({"role": "assistant", "content": content.strip()})
         # customise chat context
-        if context and (not history or (history and config.chatGPTApiContextInAllInputs)):
+        if context and (config.chatGPTApiPredefinedContext == "Execute Python Code" or (not history or (history and config.chatGPTApiContextInAllInputs))):
             #messages.append({"role": "assistant", "content": context})
             userInput = f"{context}\n{userInput}"
         # user input
-        # old way to include internet search result
-        # it is now replaced by plugin "integrate google searches"
-        """
-        if config.includeDuckDuckGoSearchResults:
-            results = ddg(userInput, time='y', max_results=config.maximumDuckDuckGoSearchResults)
-            news = ""
-            for r in results:
-                if "title" in r and "body" in r:
-                    title = r["title"]
-                    body = r["body"]
-                    news += f"{title}. {body} "
-            messages.append({"role": "user", "content": f"{userInput}. Include the following information that you don't know in your response to my input: {news}"})
-        else:
-            messages.append({"role": "user", "content": userInput})"""
         messages.append({"role": "user", "content": userInput})
         return messages
 
