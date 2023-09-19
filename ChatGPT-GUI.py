@@ -708,7 +708,10 @@ class ChatGPTAPI(QWidget):
     def runSystemCommand(self, command=""):
         if not command:
             command = self.contentView.textCursor().selectedText().strip()
-        if not command:
+        if command:
+            command = repr(command)
+            command = eval(command).replace("\u2029", "\n")
+        else:
             self.noTextSelection()
             return
         
