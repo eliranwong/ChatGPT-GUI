@@ -1,7 +1,30 @@
-import os, shutil, platform, ctypes, glob, subprocess, traceback
+import ctypes
+import glob
+import os
+import platform
+import pprint
+import re
+import shutil
+import sqlite3
+import subprocess
+import sys
+import traceback
 import urllib.parse
-from io import StringIO
+import webbrowser
+from datetime import datetime
 from functools import partial
+from io import StringIO
+from shutil import copyfile
+
+import openai
+import qdarktheme
+import tiktoken
+from gtts import gTTS
+
+import config
+from configDefault import *
+from util.Worker import ChatGPTResponse, OpenAIImage
+
 # set working directory
 thisFile = os.path.realpath(__file__)
 wd = os.path.dirname(thisFile)
@@ -9,29 +32,37 @@ if os.getcwd() != wd:
     os.chdir(wd)
 if not os.path.isfile("config.py"):
     open("config.py", "a", encoding="utf-8").close()
-import config
-from configDefault import *
-import re, openai, tiktoken, sqlite3, webbrowser, sys, pprint, qdarktheme
-from shutil import copyfile
-from gtts import gTTS
 try:
     from pocketsphinx import LiveSpeech, get_model_path
     isPocketsphinxInstalled = True
 except:
     isPocketsphinxInstalled = False
 
-from datetime import datetime
-from util.Worker import ChatGPTResponse, OpenAIImage
 if config.qtLibrary == "pyside6":
-    from PySide6.QtPrintSupport import QPrinter, QPrintDialog
-    from PySide6.QtCore import Qt, QThread, Signal, QRegularExpression
-    from PySide6.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QAction, QIcon, QFontMetrics, QTextDocument
-    from PySide6.QtWidgets import QCompleter, QMenu, QSystemTrayIcon, QApplication, QMainWindow, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from PySide6.QtCore import QRegularExpression, Qt, QThread, Signal
+    from PySide6.QtGui import (QAction, QFontMetrics, QGuiApplication, QIcon,
+                               QStandardItem, QStandardItemModel,
+                               QTextDocument)
+    from PySide6.QtPrintSupport import QPrintDialog, QPrinter
+    from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox,
+                                   QCompleter, QDialog, QDialogButtonBox,
+                                   QFileDialog, QFormLayout, QHBoxLayout,
+                                   QLabel, QLineEdit, QListView, QMainWindow,
+                                   QMenu, QMessageBox, QPlainTextEdit,
+                                   QProgressBar, QPushButton, QSplitter,
+                                   QSystemTrayIcon, QVBoxLayout, QWidget)
 else:
-    from qtpy.QtPrintSupport import QPrinter, QPrintDialog
-    from qtpy.QtCore import Qt, QThread, Signal, QRegularExpression
-    from qtpy.QtGui import QStandardItemModel, QStandardItem, QGuiApplication, QIcon, QFontMetrics, QTextDocument
-    from qtpy.QtWidgets import QCompleter, QMenu, QSystemTrayIcon, QApplication, QMainWindow, QAction, QWidget, QDialog, QFileDialog, QDialogButtonBox, QFormLayout, QLabel, QMessageBox, QCheckBox, QPlainTextEdit, QProgressBar, QPushButton, QListView, QHBoxLayout, QVBoxLayout, QLineEdit, QSplitter, QComboBox
+    from qtpy.QtCore import QRegularExpression, Qt, QThread, Signal
+    from qtpy.QtGui import (QFontMetrics, QGuiApplication, QIcon,
+                            QStandardItem, QStandardItemModel, QTextDocument)
+    from qtpy.QtPrintSupport import QPrintDialog, QPrinter
+    from qtpy.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox,
+                                QCompleter, QDialog, QDialogButtonBox,
+                                QFileDialog, QFormLayout, QHBoxLayout, QLabel,
+                                QLineEdit, QListView, QMainWindow, QMenu,
+                                QMessageBox, QPlainTextEdit, QProgressBar,
+                                QPushButton, QSplitter, QSystemTrayIcon,
+                                QVBoxLayout, QWidget)
 
 
 class SpeechRecognitionThread(QThread):
@@ -47,7 +78,7 @@ class SpeechRecognitionThread(QThread):
             # download English dictionary at: http://www.speech.cs.cmu.edu/cgi-bin/cmudict
             # download voice models at https://sourceforge.net/projects/cmusphinx/files/Acoustic%20and%20Language%20Models/
             speech = LiveSpeech(
-                #sampling_rate=16000,  # optional
+                # sampling_rate=16000,  # optional
                 hmm=get_model_path(config.pocketsphinxModelPath),
                 lm=get_model_path(config.pocketsphinxModelPathBin),
                 dic=get_model_path(config.pocketsphinxModelPathDict),
@@ -102,45 +133,62 @@ class ApiDialog(QDialog):
             index += 1
         self.loadingInternetSearchesBox.setCurrentIndex(initialIndex)
         self.maxTokenEdit = QLineEdit(str(config.chatGPTApiMaxTokens))
-        self.maxTokenEdit.setToolTip("The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
-        self.maxInternetSearchResults = QLineEdit(str(config.maximumInternetSearchResults))
-        self.maxInternetSearchResults.setToolTip("The maximum number of internet search response to be included.")
-        #self.includeInternetSearches = QCheckBox(config.thisTranslation["include"])
-        #self.includeInternetSearches.setToolTip("Include latest internet search results")
-        #self.includeInternetSearches.setCheckState(Qt.Checked if config.includeDuckDuckGoSearchResults else Qt.Unchecked)
-        #self.includeDuckDuckGoSearchResults = config.includeDuckDuckGoSearchResults
-        self.autoScrollingCheckBox = QCheckBox(config.thisTranslation["enable"])
-        self.autoScrollingCheckBox.setToolTip("Auto-scroll display as responses are received")
-        self.autoScrollingCheckBox.setCheckState(Qt.Checked if config.chatGPTApiAutoScrolling else Qt.Unchecked)
+        self.maxTokenEdit.setToolTip(
+            "The maximum number of tokens to generate in the completion.\nThe token count of your prompt plus max_tokens cannot exceed the model's context length. Most models have a context length of 2048 tokens (except for the newest models, which support 4096).")
+        self.maxInternetSearchResults = QLineEdit(
+            str(config.maximumInternetSearchResults))
+        self.maxInternetSearchResults.setToolTip(
+            "The maximum number of internet search response to be included.")
+        # self.includeInternetSearches = QCheckBox(config.thisTranslation["include"])
+        # self.includeInternetSearches.setToolTip("Include latest internet search results")
+        # self.includeInternetSearches.setCheckState(Qt.Checked if config.includeDuckDuckGoSearchResults else Qt.Unchecked)
+        # self.includeDuckDuckGoSearchResults = config.includeDuckDuckGoSearchResults
+        self.autoScrollingCheckBox = QCheckBox(
+            config.thisTranslation["enable"])
+        self.autoScrollingCheckBox.setToolTip(
+            "Auto-scroll display as responses are received")
+        self.autoScrollingCheckBox.setCheckState(
+            Qt.Checked if config.chatGPTApiAutoScrolling else Qt.Unchecked)
         self.chatGPTApiAutoScrolling = config.chatGPTApiAutoScrolling
-        self.chatAfterFunctionCalledCheckBox = QCheckBox(config.thisTranslation["enable"])
-        self.chatAfterFunctionCalledCheckBox.setToolTip("Automatically generate next chat response after a function is called")
-        self.chatAfterFunctionCalledCheckBox.setCheckState(Qt.Checked if config.chatAfterFunctionCalled else Qt.Unchecked)
+        self.chatAfterFunctionCalledCheckBox = QCheckBox(
+            config.thisTranslation["enable"])
+        self.chatAfterFunctionCalledCheckBox.setToolTip(
+            "Automatically generate next chat response after a function is called")
+        self.chatAfterFunctionCalledCheckBox.setCheckState(
+            Qt.Checked if config.chatAfterFunctionCalled else Qt.Unchecked)
         self.chatAfterFunctionCalled = config.chatAfterFunctionCalled
-        self.runPythonScriptGloballyCheckBox = QCheckBox(config.thisTranslation["enable"])
-        self.runPythonScriptGloballyCheckBox.setToolTip("Run user python script in global scope")
-        self.runPythonScriptGloballyCheckBox.setCheckState(Qt.Checked if config.runPythonScriptGlobally else Qt.Unchecked)
+        self.runPythonScriptGloballyCheckBox = QCheckBox(
+            config.thisTranslation["enable"])
+        self.runPythonScriptGloballyCheckBox.setToolTip(
+            "Run user python script in global scope")
+        self.runPythonScriptGloballyCheckBox.setCheckState(
+            Qt.Checked if config.runPythonScriptGlobally else Qt.Unchecked)
         self.runPythonScriptGlobally = config.runPythonScriptGlobally
         self.contextEdit = QLineEdit(config.chatGPTApiContext)
         firstInputOnly = config.thisTranslation["firstInputOnly"]
         allInputs = config.thisTranslation["allInputs"]
         self.applyContextIn = QComboBox()
         self.applyContextIn.addItems([firstInputOnly, allInputs])
-        self.applyContextIn.setCurrentIndex(1 if config.chatGPTApiContextInAllInputs else 0)
+        self.applyContextIn.setCurrentIndex(
+            1 if config.chatGPTApiContextInAllInputs else 0)
         self.predefinedContextBox = QComboBox()
         initialIndex = 0
         index = 0
         for key, value in config.predefinedContexts.items():
             self.predefinedContextBox.addItem(key)
-            self.predefinedContextBox.setItemData(self.predefinedContextBox.count()-1, value, role=Qt.ToolTipRole)
+            self.predefinedContextBox.setItemData(
+                self.predefinedContextBox.count()-1, value, role=Qt.ToolTipRole)
             if key == config.chatGPTApiPredefinedContext:
                 initialIndex = index
             index += 1
-        self.predefinedContextBox.currentIndexChanged.connect(self.predefinedContextBoxChanged)
+        self.predefinedContextBox.currentIndexChanged.connect(
+            self.predefinedContextBoxChanged)
         self.predefinedContextBox.setCurrentIndex(initialIndex)
         # set availability of self.contextEdit in case there is no index changed
-        self.contextEdit.setDisabled(True) if not initialIndex == 1 else self.contextEdit.setEnabled(True)
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.contextEdit.setDisabled(
+            True) if not initialIndex == 1 else self.contextEdit.setEnabled(True)
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
 
@@ -160,21 +208,33 @@ class ApiDialog(QDialog):
         layout.addRow(f"Organization ID [{optional}]:", self.orgEdit)
         layout.addRow(f"API Model [{required}]:", self.apiModelBox)
         layout.addRow(f"Max Token [{required}]:", self.maxTokenEdit)
-        layout.addRow(f"Function Calling [{optional}]:", self.functionCallingBox)
-        layout.addRow(f"{chatAfterFunctionCalled} [{optional}]:", self.chatAfterFunctionCalledCheckBox)
-        layout.addRow(f"{predefinedContext} [{optional}]:", self.predefinedContextBox)
+        layout.addRow(
+            f"Function Calling [{optional}]:", self.functionCallingBox)
+        layout.addRow(
+            f"{chatAfterFunctionCalled} [{optional}]:", self.chatAfterFunctionCalledCheckBox)
+        layout.addRow(
+            f"{predefinedContext} [{optional}]:", self.predefinedContextBox)
         layout.addRow(f"{context} [{optional}]:", self.contextEdit)
         layout.addRow(f"{applyContext} [{optional}]:", self.applyContextIn)
-        layout.addRow(f"{latestOnlineSearchResults} [{optional}]:", self.loadingInternetSearchesBox)
-        layout.addRow(f"{maximumOnlineSearchResults} [{optional}]:", self.maxInternetSearchResults)
-        layout.addRow(f"{autoScroll} [{optional}]:", self.autoScrollingCheckBox)
-        layout.addRow(f"{runPythonScriptGlobally} [{optional}]:", self.runPythonScriptGloballyCheckBox)
+        layout.addRow(
+            f"{latestOnlineSearchResults} [{optional}]:", self.loadingInternetSearchesBox)
+        layout.addRow(
+            f"{maximumOnlineSearchResults} [{optional}]:", self.maxInternetSearchResults)
+        layout.addRow(f"{autoScroll} [{optional}]:",
+                      self.autoScrollingCheckBox)
+        layout.addRow(
+            f"{runPythonScriptGlobally} [{optional}]:", self.runPythonScriptGloballyCheckBox)
         layout.addWidget(buttonBox)
-        self.autoScrollingCheckBox.stateChanged.connect(self.toggleAutoScrollingCheckBox)
-        self.chatAfterFunctionCalledCheckBox.stateChanged.connect(self.toggleChatAfterFunctionCalled)
-        self.runPythonScriptGloballyCheckBox.stateChanged.connect(self.toggleRunPythonScriptGlobally)
-        self.functionCallingBox.currentIndexChanged.connect(self.functionCallingBoxChanged)
-        self.loadingInternetSearchesBox.currentIndexChanged.connect(self.loadingInternetSearchesBoxChanged)
+        self.autoScrollingCheckBox.stateChanged.connect(
+            self.toggleAutoScrollingCheckBox)
+        self.chatAfterFunctionCalledCheckBox.stateChanged.connect(
+            self.toggleChatAfterFunctionCalled)
+        self.runPythonScriptGloballyCheckBox.stateChanged.connect(
+            self.toggleRunPythonScriptGlobally)
+        self.functionCallingBox.currentIndexChanged.connect(
+            self.functionCallingBoxChanged)
+        self.loadingInternetSearchesBox.currentIndexChanged.connect(
+            self.loadingInternetSearchesBoxChanged)
 
         self.setLayout(layout)
 
@@ -191,14 +251,15 @@ class ApiDialog(QDialog):
         return True if self.applyContextIn.currentIndex() == 1 else False
 
     def predefinedContextBoxChanged(self, index):
-        self.contextEdit.setDisabled(True) if not index == 1 else self.contextEdit.setEnabled(True)
+        self.contextEdit.setDisabled(
+            True) if not index == 1 else self.contextEdit.setEnabled(True)
 
     def predefinedContext(self):
         return self.predefinedContextBox.currentText()
-        #return self.predefinedContextBox.currentData(Qt.ToolTipRole)
+        # return self.predefinedContextBox.currentData(Qt.ToolTipRole)
 
     def apiModel(self):
-        #return "gpt-3.5-turbo"
+        # return "gpt-3.5-turbo"
         return self.apiModelBox.currentText()
 
     def functionCalling(self):
@@ -242,17 +303,20 @@ class ApiDialog(QDialog):
     def max_internet_search_results(self):
         return self.maxInternetSearchResults.text().strip()
 
+
 class Database:
     def __init__(self, filePath=""):
         def regexp(expr, item):
             reg = re.compile(expr, flags=re.IGNORECASE)
             return reg.search(item) is not None
-        defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(config.chatGPTApiLastChatDatabase) else os.path.join(wd, "chats", "default.chat")
+        defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(
+            config.chatGPTApiLastChatDatabase) else os.path.join(wd, "chats", "default.chat")
         self.filePath = filePath if filePath else defaultFilePath
         self.connection = sqlite3.connect(self.filePath)
         self.connection.create_function("REGEXP", 2, regexp)
         self.cursor = self.connection.cursor()
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS data (id TEXT PRIMARY KEY, title TEXT, content TEXT)')
+        self.cursor.execute(
+            'CREATE TABLE IF NOT EXISTS data (id TEXT PRIMARY KEY, title TEXT, content TEXT)')
         self.connection.commit()
 
     def insert(self, id, title, content):
@@ -262,19 +326,23 @@ class Database:
             if existing_data[1] == title and existing_data[2] == content:
                 return
             else:
-                self.cursor.execute('UPDATE data SET title = ?, content = ? WHERE id = ?', (title, content, id))
+                self.cursor.execute(
+                    'UPDATE data SET title = ?, content = ? WHERE id = ?', (title, content, id))
                 self.connection.commit()
         else:
-            self.cursor.execute('INSERT INTO data (id, title, content) VALUES (?, ?, ?)', (id, title, content))
+            self.cursor.execute(
+                'INSERT INTO data (id, title, content) VALUES (?, ?, ?)', (id, title, content))
             self.connection.commit()
 
     def search(self, title, content):
         if config.regexpSearchEnabled:
             # with regular expression
-            self.cursor.execute('SELECT * FROM data WHERE title REGEXP ? AND content REGEXP ?', (title, content))
+            self.cursor.execute(
+                'SELECT * FROM data WHERE title REGEXP ? AND content REGEXP ?', (title, content))
         else:
             # without regular expression
-            self.cursor.execute('SELECT * FROM data WHERE title LIKE ? AND content LIKE ?', ('%{}%'.format(title), '%{}%'.format(content)))
+            self.cursor.execute('SELECT * FROM data WHERE title LIKE ? AND content LIKE ?',
+                                ('%{}%'.format(title), '%{}%'.format(content)))
         return self.cursor.fetchall()
 
     def delete(self, id):
@@ -314,7 +382,8 @@ class ChatGPTAPI(QWidget):
         # Show a file dialog to get the file path to open
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(wd, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+        filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(
+            wd, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
 
         # If the user selects a file path, open the file
         self.database = Database(filePath)
@@ -326,7 +395,8 @@ class ChatGPTAPI(QWidget):
         # Show a file dialog to get the file path to save
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filePath, _ = QFileDialog.getSaveFileName(self, "New Database", os.path.join(wd, "chats", self.database.filePath if copyExistingDatabase else "new.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+        filePath, _ = QFileDialog.getSaveFileName(self, "New Database", os.path.join(
+            wd, "chats", self.database.filePath if copyExistingDatabase else "new.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
 
         # If the user selects a file path, save the file
         if filePath:
@@ -341,7 +411,8 @@ class ChatGPTAPI(QWidget):
                 # Ask the user if they want to replace the existing file
                 msgBox = QMessageBox()
                 msgBox.setWindowTitle("Confirm overwrite")
-                msgBox.setText(f"The file {filePath} already exists. Do you want to replace it?")
+                msgBox.setText(
+                    f"The file {filePath} already exists. Do you want to replace it?")
                 msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
                 msgBox.setDefaultButton(QMessageBox.No)
                 if msgBox.exec() == QMessageBox.No:
@@ -371,7 +442,8 @@ class ChatGPTAPI(QWidget):
         self.updateTitle()
         self.data_list = []
         self.recognitionThread = SpeechRecognitionThread(self)
-        self.recognitionThread.phrase_recognized.connect(self.onPhraseRecognized)
+        self.recognitionThread.phrase_recognized.connect(
+            self.onPhraseRecognized)
 
     def setupUI(self):
         layout000 = QHBoxLayout()
@@ -382,13 +454,13 @@ class ChatGPTAPI(QWidget):
         widgetRt = QWidget()
         layout000Rt = QVBoxLayout()
         widgetRt.setLayout(layout000Rt)
-        
+
         splitter = QSplitter(Qt.Horizontal, self)
         splitter.addWidget(widgetLt)
         splitter.addWidget(widgetRt)
         layout000.addWidget(splitter)
 
-        #widgets on the right
+        # widgets on the right
         self.searchInput = QLineEdit()
         self.searchInput.setClearButtonEnabled(True)
         self.replaceInput = QLineEdit()
@@ -397,18 +469,21 @@ class ChatGPTAPI(QWidget):
         completer = QCompleter(config.inputSuggestions)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.userInput.setCompleter(completer)
-        self.userInput.setPlaceholderText(config.thisTranslation["messageHere"])
-        self.userInput.mousePressEvent = lambda _ : self.userInput.selectAll()
+        self.userInput.setPlaceholderText(
+            config.thisTranslation["messageHere"])
+        self.userInput.mousePressEvent = lambda _: self.userInput.selectAll()
         self.userInput.setClearButtonEnabled(True)
         self.userInputMultiline = QPlainTextEdit()
-        self.userInputMultiline.setPlaceholderText(config.thisTranslation["messageHere"])
+        self.userInputMultiline.setPlaceholderText(
+            config.thisTranslation["messageHere"])
         self.voiceCheckbox = QCheckBox(config.thisTranslation["voice"])
         self.voiceCheckbox.setToolTip(config.thisTranslation["voiceTyping"])
         self.voiceCheckbox.setCheckState(Qt.Unchecked)
         self.contentView = QPlainTextEdit()
         self.contentView.setReadOnly(True)
         self.progressBar = QProgressBar()
-        self.progressBar.setRange(0, 0) # Set the progress bar to use an indeterminate progress indicator
+        # Set the progress bar to use an indeterminate progress indicator
+        self.progressBar.setRange(0, 0)
         apiKeyButton = QPushButton(config.thisTranslation["settings"])
         self.multilineButton = QPushButton("+")
         font_metrics = QFontMetrics(self.multilineButton.font())
@@ -420,19 +495,21 @@ class ChatGPTAPI(QWidget):
         searchLabel = QLabel(config.thisTranslation["searchFor"])
         replaceLabel = QLabel(config.thisTranslation["replaceWith"])
         searchReplaceButton = QPushButton(config.thisTranslation["replace"])
-        searchReplaceButton.setToolTip(config.thisTranslation["replaceSelectedText"])
+        searchReplaceButton.setToolTip(
+            config.thisTranslation["replaceSelectedText"])
         searchReplaceButtonAll = QPushButton(config.thisTranslation["all"])
         searchReplaceButtonAll.setToolTip(config.thisTranslation["replaceAll"])
         self.apiModels = QComboBox()
-        self.apiModels.addItems([config.thisTranslation["chat"], config.thisTranslation["image"], "browser", "python", "system"])
+        self.apiModels.addItems([config.thisTranslation["chat"],
+                                config.thisTranslation["image"], "browser", "python", "system"])
         self.apiModels.setCurrentIndex(0)
         self.apiModel = 0
         self.newButton = QPushButton(config.thisTranslation["new"])
         saveButton = QPushButton(config.thisTranslation["save"])
         self.editableCheckbox = QCheckBox(config.thisTranslation["editable"])
         self.editableCheckbox.setCheckState(Qt.Unchecked)
-        #self.audioCheckbox = QCheckBox(config.thisTranslation["audio"])
-        #self.audioCheckbox.setCheckState(Qt.Checked if config.chatGPTApiAudio else Qt.Unchecked)
+        # self.audioCheckbox = QCheckBox(config.thisTranslation["audio"])
+        # self.audioCheckbox.setCheckState(Qt.Checked if config.chatGPTApiAudio else Qt.Unchecked)
         self.choiceNumber = QComboBox()
         self.choiceNumber.addItems([str(i) for i in range(1, 11)])
         self.choiceNumber.setCurrentIndex((config.chatGPTApiNoOfChoices - 1))
@@ -441,13 +518,16 @@ class ChatGPTAPI(QWidget):
         self.fontSize.setCurrentIndex((config.fontSize - 1))
         self.temperature = QComboBox()
         self.temperature.addItems([str(i/10) for i in range(0, 21)])
-        self.temperature.setCurrentIndex(int(config.chatGPTApiTemperature * 10))
+        self.temperature.setCurrentIndex(
+            int(config.chatGPTApiTemperature * 10))
         temperatureLabel = QLabel(config.thisTranslation["temperature"])
         temperatureLabel.setAlignment(Qt.AlignRight)
-        temperatureLabel.setToolTip("What sampling temperature to use, between 0 and 2. \nHigher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.")
+        temperatureLabel.setToolTip(
+            "What sampling temperature to use, between 0 and 2. \nHigher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.")
         choicesLabel = QLabel(config.thisTranslation["choices"])
         choicesLabel.setAlignment(Qt.AlignRight)
-        choicesLabel.setToolTip("How many chat completion choices to generate for each input message.")
+        choicesLabel.setToolTip(
+            "How many chat completion choices to generate for each input message.")
         fontLabel = QLabel(config.thisTranslation["font"])
         fontLabel.setAlignment(Qt.AlignRight)
         fontLabel.setToolTip(config.thisTranslation["fontSize"])
@@ -483,23 +563,26 @@ class ChatGPTAPI(QWidget):
         rtControlLayout.addWidget(fontLabel)
         rtControlLayout.addWidget(self.fontSize)
         rtControlLayout.addWidget(self.editableCheckbox)
-        #rtControlLayout.addWidget(self.audioCheckbox)
+        # rtControlLayout.addWidget(self.audioCheckbox)
         rtButtonLayout = QHBoxLayout()
         rtButtonLayout.addWidget(self.newButton)
         rtButtonLayout.addWidget(saveButton)
         layout000Rt.addLayout(rtControlLayout)
         layout000Rt.addLayout(rtButtonLayout)
-        
-        #widgets on the left
+
+        # widgets on the left
         helpButton = QPushButton(config.thisTranslation["help"])
         searchTitleButton = QPushButton(config.thisTranslation["searchTitle"])
-        searchContentButton = QPushButton(config.thisTranslation["searchContent"])
+        searchContentButton = QPushButton(
+            config.thisTranslation["searchContent"])
         self.searchTitle = QLineEdit()
         self.searchTitle.setClearButtonEnabled(True)
-        self.searchTitle.setPlaceholderText(config.thisTranslation["searchTitleHere"])
+        self.searchTitle.setPlaceholderText(
+            config.thisTranslation["searchTitleHere"])
         self.searchContent = QLineEdit()
         self.searchContent.setClearButtonEnabled(True)
-        self.searchContent.setPlaceholderText(config.thisTranslation["searchContentHere"])
+        self.searchContent.setPlaceholderText(
+            config.thisTranslation["searchContentHere"])
         self.listView = QListView()
         self.listModel = QStandardItemModel()
         self.listView.setModel(self.listModel)
@@ -519,10 +602,11 @@ class ChatGPTAPI(QWidget):
         ltButtonLayout.addWidget(clearAllButton)
         layout000Lt.addLayout(ltButtonLayout)
         layout000Lt.addWidget(helpButton)
-        
+
         # Connections
         self.userInput.returnPressed.connect(self.sendMessage)
-        helpButton.clicked.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/wiki"))
+        helpButton.clicked.connect(lambda: webbrowser.open(
+            "https://github.com/eliranwong/ChatGPT-GUI/wiki"))
         apiKeyButton.clicked.connect(self.showApiDialog)
         self.multilineButton.clicked.connect(self.multilineButtonClicked)
         self.sendButton.clicked.connect(self.sendMessage)
@@ -536,7 +620,7 @@ class ChatGPTAPI(QWidget):
         clearAllButton.clicked.connect(self.clearData)
         removeButton.clicked.connect(self.removeData)
         self.editableCheckbox.stateChanged.connect(self.toggleEditable)
-        #self.audioCheckbox.stateChanged.connect(self.toggleChatGPTApiAudio)
+        # self.audioCheckbox.stateChanged.connect(self.toggleChatGPTApiAudio)
         self.voiceCheckbox.stateChanged.connect(self.toggleVoiceTyping)
         self.choiceNumber.currentIndexChanged.connect(self.updateChoiceNumber)
         self.apiModels.currentIndexChanged.connect(self.updateApiModel)
@@ -564,16 +648,20 @@ class ChatGPTAPI(QWidget):
 
     def updateSearchToolTips(self):
         if config.regexpSearchEnabled:
-            self.searchTitle.setToolTip(config.thisTranslation["matchingRegularExpression"])
-            self.searchContent.setToolTip(config.thisTranslation["matchingRegularExpression"])
-            self.searchInput.setToolTip(config.thisTranslation["matchingRegularExpression"])
+            self.searchTitle.setToolTip(
+                config.thisTranslation["matchingRegularExpression"])
+            self.searchContent.setToolTip(
+                config.thisTranslation["matchingRegularExpression"])
+            self.searchInput.setToolTip(
+                config.thisTranslation["matchingRegularExpression"])
         else:
             self.searchTitle.setToolTip("")
             self.searchContent.setToolTip("")
             self.searchInput.setToolTip("")
 
     def searchChatContent(self):
-        search = QRegularExpression(self.searchInput.text()) if config.regexpSearchEnabled else self.searchInput.text()
+        search = QRegularExpression(self.searchInput.text(
+        )) if config.regexpSearchEnabled else self.searchInput.text()
         self.contentView.find(search)
 
     def replaceSelectedText(self):
@@ -582,7 +670,8 @@ class ChatGPTAPI(QWidget):
             searchInput = self.searchInput.text()
             replaceInput = self.replaceInput.text()
             if searchInput:
-                replace = re.sub(searchInput, replaceInput, currentSelectedText) if config.regexpSearchEnabled else currentSelectedText.replace(searchInput, replaceInput)
+                replace = re.sub(searchInput, replaceInput, currentSelectedText) if config.regexpSearchEnabled else currentSelectedText.replace(
+                    searchInput, replaceInput)
             else:
                 replace = self.replaceInput.text()
             self.contentView.insertPlainText(replace)
@@ -592,7 +681,8 @@ class ChatGPTAPI(QWidget):
         if search:
             replace = self.replaceInput.text()
             content = self.contentView.toPlainText()
-            newContent = re.sub(search, replace, content, flags=re.M) if config.regexpSearchEnabled else content.replace(search, replace)
+            newContent = re.sub(
+                search, replace, content, flags=re.M) if config.regexpSearchEnabled else content.replace(search, replace)
             self.contentView.setPlainText(newContent)
 
     def multilineButtonClicked(self):
@@ -609,7 +699,8 @@ class ChatGPTAPI(QWidget):
         self.setUserInputFocus()
 
     def setUserInputFocus(self):
-        self.userInput.setFocus() if self.userInput.isVisible() else self.userInputMultiline.setFocus()
+        self.userInput.setFocus() if self.userInput.isVisible(
+        ) else self.userInputMultiline.setFocus()
 
     def showApiDialog(self):
         dialog = ApiDialog(self)
@@ -626,14 +717,15 @@ class ChatGPTAPI(QWidget):
             except:
                 pass
             try:
-                config.maximumInternetSearchResults = int(dialog.max_internet_search_results())
+                config.maximumInternetSearchResults = int(
+                    dialog.max_internet_search_results())
                 if config.maximumInternetSearchResults <= 0:
                     config.maximumInternetSearchResults = 1
                 elif config.maximumInternetSearchResults > 100:
                     config.maximumInternetSearchResults = 100
             except:
                 pass
-            #config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
+            # config.includeDuckDuckGoSearchResults = dialog.include_internet_searches()
             config.chatGPTApiAutoScrolling = dialog.enable_auto_scrolling()
             config.runPythonScriptGlobally = dialog.enable_runPythonScriptGlobally()
             config.chatAfterFunctionCalled = dialog.enable_chatAfterFunctionCalled()
@@ -651,7 +743,7 @@ class ChatGPTAPI(QWidget):
             config.chatGPTApiPredefinedContext = dialog.predefinedContext()
             config.chatGPTApiContextInAllInputs = dialog.contextInAllInputs()
             config.chatGPTApiContext = dialog.context()
-            #config.chatGPTApiAudioLanguage = dialog.language()
+            # config.chatGPTApiAudioLanguage = dialog.language()
             self.newData()
 
     def updateApiModel(self, index):
@@ -678,7 +770,8 @@ class ChatGPTAPI(QWidget):
             self.closeMediaPlayer()
 
     def noTextSelection(self):
-        self.displayMessage("This feature works on text selection. Select text first!")
+        self.displayMessage(
+            "This feature works on text selection. Select text first!")
 
     def validate_url(self, url):
         try:
@@ -714,13 +807,14 @@ class ChatGPTAPI(QWidget):
         else:
             self.noTextSelection()
             return
-        
+
         # display output only, without error
-        #output = subprocess.check_output(command, shell=True, text=True)
-        #self.displayText(output)
+        # output = subprocess.check_output(command, shell=True, text=True)
+        # self.displayText(output)
 
         # display both output and error
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        result = subprocess.run(command, shell=True,
+                                capture_output=True, text=True)
         output = result.stdout  # Captured standard output
         error = result.stderr  # Captured standard error
         self.displayText(f"> {command}")
@@ -748,7 +842,8 @@ class ChatGPTAPI(QWidget):
             sys.stdout = output
             # Execute the Python string in global namespace
             try:
-                exec(command, globals()) if config.runPythonScriptGlobally else exec(command)
+                exec(command, globals()
+                     ) if config.runPythonScriptGlobally else exec(command)
                 captured_output = output.getvalue()
             except:
                 captured_output = traceback.format_exc()
@@ -767,7 +862,8 @@ class ChatGPTAPI(QWidget):
         index = self.listView.selectedIndexes()
         if not index:
             return
-        confirm = QMessageBox.question(self, config.thisTranslation["remove"], config.thisTranslation["areyousure"], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        confirm = QMessageBox.question(
+            self, config.thisTranslation["remove"], config.thisTranslation["areyousure"], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirm == QMessageBox.Yes:
             item = index[0]
             data = item.data(Qt.UserRole)
@@ -776,7 +872,8 @@ class ChatGPTAPI(QWidget):
             self.newData()
 
     def clearData(self):
-        confirm = QMessageBox.question(self, config.thisTranslation["clearAll"], config.thisTranslation["areyousure"], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        confirm = QMessageBox.question(
+            self, config.thisTranslation["clearAll"], config.thisTranslation["areyousure"], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirm == QMessageBox.Yes:
             self.database.clear()
             self.loadData()
@@ -823,7 +920,6 @@ class ChatGPTAPI(QWidget):
             self.userInput.setText(currentSelectedText)
             self.sendMessage()
 
-
     def newData(self):
         if not self.busyLoading:
             self.contentID = ""
@@ -857,7 +953,8 @@ Follow the following steps:
         # Show a file dialog to get the file path to save
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filePath, _ = QFileDialog.getSaveFileName(self, "Export Chat Content", os.path.join(wd, "chats", "chat.txt"), "Text Files (*.txt);;Python Files (*.py);;All Files (*)", options=options)
+        filePath, _ = QFileDialog.getSaveFileName(self, "Export Chat Content", os.path.join(
+            wd, "chats", "chat.txt"), "Text Files (*.txt);;Python Files (*.py);;All Files (*)", options=options)
 
         # If the user selects a file path, save the file
         if filePath:
@@ -892,7 +989,7 @@ Follow the following steps:
         except KeyError:
             print("Warning: model not found. Using cl100k_base encoding.")
             encoding = tiktoken.get_encoding("cl100k_base")
-        #encoding = tiktoken.get_encoding("cl100k_base")
+        # encoding = tiktoken.get_encoding("cl100k_base")
         if model in {
             "gpt-3.5-turbo",
             "gpt-3.5-turbo-0613",
@@ -904,17 +1001,18 @@ Follow the following steps:
             "gpt-4-0613",
             "gpt-4-32k",
             "gpt-4-32k-0613",
-            }:
+        }:
             tokens_per_message = 3
             tokens_per_name = 1
         elif model == "gpt-3.5-turbo-0301":
-            tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+            # every message follows <|start|>{role/name}\n{content}<|end|>\n
+            tokens_per_message = 4
             tokens_per_name = -1  # if there's a name, the role is omitted
         elif "gpt-3.5-turbo" in model:
-            #print("Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.")
+            # print("Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.")
             return self.num_tokens_from_messages(messages, model="gpt-3.5-turbo-0613")
         elif "gpt-4" in model:
-            #print("Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
+            # print("Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
             return self.num_tokens_from_messages(messages, model="gpt-4-0613")
         else:
             raise NotImplementedError(
@@ -928,7 +1026,7 @@ Follow the following steps:
                 if key == "name":
                     num_tokens += tokens_per_name
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
-        #return num_tokens
+        # return num_tokens
         self.displayMessage(message=f"{num_tokens} prompt tokens counted!")
 
     def getContext(self):
@@ -968,25 +1066,30 @@ Follow the following steps:
                 messages.append({"role": "assistant", "content": context})
             if history.startswith(">>> "):
                 history = history[4:]
-            exchanges = [exchange for exchange in history.split("\n>>> ") if exchange.strip()]
+            exchanges = [exchange for exchange in history.split(
+                "\n>>> ") if exchange.strip()]
             for exchange in exchanges:
                 qa = exchange.split("\n~~~ ")
                 for i, content in enumerate(qa):
                     if i == 0:
-                        messages.append({"role": "user", "content": content.strip()})
+                        messages.append(
+                            {"role": "user", "content": content.strip()})
                     else:
-                        messages.append({"role": "assistant", "content": content.strip()})
+                        messages.append(
+                            {"role": "assistant", "content": content.strip()})
         # customise chat context
         if context and (config.chatGPTApiPredefinedContext == "Execute Python Code" or (not history or (history and config.chatGPTApiContextInAllInputs))):
-            #messages.append({"role": "assistant", "content": context})
+            # messages.append({"role": "assistant", "content": context})
             userInput = f"{context}\n{userInput}"
         # user input
         messages.append({"role": "user", "content": userInput})
         return messages
 
     def print(self, text):
-        self.contentView.appendPlainText(f"\n{text}" if self.contentView.toPlainText() else text)
-        self.contentView.setPlainText(re.sub("\n\n[\n]+?([^\n])", r"\n\n\1", self.contentView.toPlainText()))
+        self.contentView.appendPlainText(
+            f"\n{text}" if self.contentView.toPlainText() else text)
+        self.contentView.setPlainText(
+            re.sub("\n\n[\n]+?([^\n])", r"\n\n\1", self.contentView.toPlainText()))
 
     def printStream(self, text):
         # transform responses
@@ -994,7 +1097,7 @@ Follow the following steps:
             text = t(text)
         self.contentView.setPlainText(self.contentView.toPlainText() + text)
         # no audio for streaming tokens
-        #if config.chatGPTApiAudio:
+        # if config.chatGPTApiAudio:
         #    self.playAudio(text)
         # scroll to the bottom
         if config.chatGPTApiAutoScrolling:
@@ -1026,7 +1129,7 @@ Follow the following steps:
             userInput = self.userInput.text().strip()
             if userInput:
                 self.userInput.setDisabled(True)
-                self.progressBar.show() # show progress bar
+                self.progressBar.show()  # show progress bar
                 OpenAIImage(self).workOnGetResponse(userInput)
 
     def displayImage(self, imageUrl):
@@ -1054,8 +1157,9 @@ Follow the following steps:
                 self.saveData()
                 self.currentLoadingID = self.contentID
                 self.currentLoadingContent = self.contentView.toPlainText().strip()
-                self.progressBar.show() # show progress bar
-                ChatGPTResponse(self).workOnGetResponse(messages) # get chatGPT response in a separate thread
+                self.progressBar.show()  # show progress bar
+                # get chatGPT response in a separate thread
+                ChatGPTResponse(self).workOnGetResponse(messages)
 
     def fileNamesWithoutExtension(self, dir, ext):
         files = glob.glob(os.path.join(dir, "*.{0}".format(ext)))
@@ -1112,7 +1216,7 @@ Follow the following steps:
             if config.chatGPTApiAutoScrolling:
                 contentScrollBar = self.contentView.verticalScrollBar()
                 contentScrollBar.setValue(contentScrollBar.maximum())
-            #if not (responses.startswith("OpenAI API re") or responses.startswith("Failed to connect to OpenAI API:")) and config.chatGPTApiAudio:
+            # if not (responses.startswith("OpenAI API re") or responses.startswith("Failed to connect to OpenAI API:")) and config.chatGPTApiAudio:
             #        self.playAudio(responses)
         # empty user input
         self.userInput.setText("")
@@ -1129,20 +1233,23 @@ Follow the following steps:
         self.setUserInputFocus()
 
     def playAudio(self, responses):
-        textList = [i.replace(">>>", "").strip() for i in responses.split("\n") if i.strip()]
+        textList = [i.replace(">>>", "").strip()
+                    for i in responses.split("\n") if i.strip()]
         audioFiles = []
         for index, text in enumerate(textList):
             try:
-                audioFile = os.path.abspath(os.path.join("temp", f"gtts_{index}.mp3"))
+                audioFile = os.path.abspath(
+                    os.path.join("temp", f"gtts_{index}.mp3"))
                 if os.path.isfile(audioFile):
                     os.remove(audioFile)
-                gTTS(text=text, lang=config.chatGPTApiAudioLanguage if config.chatGPTApiAudioLanguage else "en").save(audioFile)
+                gTTS(text=text, lang=config.chatGPTApiAudioLanguage if config.chatGPTApiAudioLanguage else "en").save(
+                    audioFile)
                 audioFiles.append(audioFile)
             except:
                 pass
         if audioFiles:
             self.playAudioBibleFilePlayList(audioFiles)
-    
+
     def playAudioBibleFilePlayList(self, files):
         pass
 
@@ -1178,7 +1285,8 @@ class MainWindow(QMainWindow):
 
         new_action = QAction(config.thisTranslation["saveDatabaseAs"], self)
         new_action.setShortcut("Ctrl+Shift+S")
-        new_action.triggered.connect(lambda: self.chatGPT.newDatabase(copyExistingDatabase=True))
+        new_action.triggered.connect(
+            lambda: self.chatGPT.newDatabase(copyExistingDatabase=True))
         file_menu.addAction(new_action)
 
         file_menu.addSeparator()
@@ -1250,7 +1358,8 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.toggleSystemTray)
         customise_menu.addAction(new_action)
 
-        new_action = QAction(config.thisTranslation["toggleMultilineInput"], self)
+        new_action = QAction(
+            config.thisTranslation["toggleMultilineInput"], self)
         new_action.setShortcut("Ctrl+L")
         new_action.triggered.connect(self.chatGPT.multilineButtonClicked)
         customise_menu.addAction(new_action)
@@ -1261,12 +1370,14 @@ class MainWindow(QMainWindow):
         customise_menu.addAction(new_action)
 
         # Create predefined context menu
-        context_menu = menubar.addMenu(config.thisTranslation["predefinedContext"])
+        context_menu = menubar.addMenu(
+            config.thisTranslation["predefinedContext"])
         for index, context in enumerate(config.predefinedContexts):
             contextAction = QAction(context, self)
             if index < 10:
                 contextAction.setShortcut(f"Ctrl+{index}")
-            contextAction.triggered.connect(partial(self.chatGPT.bibleChatAction, context))
+            contextAction.triggered.connect(
+                partial(self.chatGPT.bibleChatAction, context))
             context_menu.addAction(contextAction)
 
         # Create a plugin menu
@@ -1276,22 +1387,27 @@ class MainWindow(QMainWindow):
         for index, plugin in enumerate(self.fileNamesWithoutExtension(pluginFolder, "py")):
             new_action = QAction(plugin, self)
             new_action.setCheckable(True)
-            new_action.setChecked(False if plugin in config.chatGPTPluginExcludeList else True)
-            new_action.triggered.connect(partial(self.updateExcludePluginList, plugin))
+            new_action.setChecked(
+                False if plugin in config.chatGPTPluginExcludeList else True)
+            new_action.triggered.connect(
+                partial(self.updateExcludePluginList, plugin))
             plugin_menu.addAction(new_action)
 
         # Create a text selection menu
-        text_selection_menu = menubar.addMenu(config.thisTranslation["textSelection"])
+        text_selection_menu = menubar.addMenu(
+            config.thisTranslation["textSelection"])
 
         new_action = QAction(config.thisTranslation["webBrowser"], self)
         new_action.triggered.connect(self.chatGPT.webBrowse)
         text_selection_menu.addAction(new_action)
 
-        new_action = QAction(config.thisTranslation["runAsPythonCommand"], self)
+        new_action = QAction(
+            config.thisTranslation["runAsPythonCommand"], self)
         new_action.triggered.connect(self.chatGPT.runPythonCommand)
         text_selection_menu.addAction(new_action)
 
-        new_action = QAction(config.thisTranslation["runAsSystemCommand"], self)
+        new_action = QAction(
+            config.thisTranslation["runAsSystemCommand"], self)
         new_action.triggered.connect(self.chatGPT.runSystemCommand)
         text_selection_menu.addAction(new_action)
 
@@ -1299,23 +1415,23 @@ class MainWindow(QMainWindow):
         about_menu = menubar.addMenu(config.thisTranslation["about"])
 
         openSettings = QAction(config.thisTranslation["repository"], self)
-        openSettings.triggered.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI"))
+        openSettings.triggered.connect(lambda: webbrowser.open(
+            "https://github.com/eliranwong/ChatGPT-GUI"))
         about_menu.addAction(openSettings)
 
         about_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["help"], self)
-        new_action.triggered.connect(lambda: webbrowser.open("https://github.com/eliranwong/ChatGPT-GUI/wiki"))
+        new_action.triggered.connect(lambda: webbrowser.open(
+            "https://github.com/eliranwong/ChatGPT-GUI/wiki"))
         about_menu.addAction(new_action)
 
         about_menu.addSeparator()
 
         new_action = QAction(config.thisTranslation["donate"], self)
-        new_action.triggered.connect(lambda: webbrowser.open("https://www.paypal.com/paypalme/MarvelBible"))
+        new_action.triggered.connect(lambda: webbrowser.open(
+            "https://www.paypal.com/paypalme/MarvelBible"))
         about_menu.addAction(new_action)
-
-        
-
 
     def initUI(self):
         # Set a central widget
@@ -1326,7 +1442,7 @@ class MainWindow(QMainWindow):
         self.createMenubar()
 
         # set initial window size
-        #self.setWindowTitle("ChatGPT-GUI")
+        # self.setWindowTitle("ChatGPT-GUI")
         self.resize(QGuiApplication.primaryScreen().availableSize() * 3 / 4)
         self.show()
 
@@ -1359,7 +1475,8 @@ class MainWindow(QMainWindow):
         return openCommand
 
     def openDatabaseDirectory(self):
-        databaseDirectory = os.path.dirname(os.path.abspath(config.chatGPTApiLastChatDatabase))
+        databaseDirectory = os.path.dirname(
+            os.path.abspath(config.chatGPTApiLastChatDatabase))
         openCommand = self.getOpenCommand()
         os.system(f"{openCommand} {databaseDirectory}")
 
@@ -1370,11 +1487,13 @@ class MainWindow(QMainWindow):
     def toggleRegexp(self):
         config.regexpSearchEnabled = not config.regexpSearchEnabled
         self.chatGPT.updateSearchToolTips()
-        QMessageBox.information(self, "ChatGPT-GUI", f"Regular expression for search and replace is {'enabled' if config.regexpSearchEnabled else 'disabled'}!")
+        QMessageBox.information(
+            self, "ChatGPT-GUI", f"Regular expression for search and replace is {'enabled' if config.regexpSearchEnabled else 'disabled'}!")
 
     def toggleSystemTray(self):
         config.enableSystemTray = not config.enableSystemTray
-        QMessageBox.information(self, "ChatGPT-GUI", "You need to restart this application to make the changes effective.")
+        QMessageBox.information(
+            self, "ChatGPT-GUI", "You need to restart this application to make the changes effective.")
 
     def toggleTheme(self):
         config.darkTheme = not config.darkTheme
@@ -1414,20 +1533,22 @@ if __name__ == '__main__':
         with open("config.py", "w", encoding="utf-8") as fileObj:
             for name in dir(config):
                 excludeFromSavingList = (
-                    "mainWindow", # main window object
-                    "chatGPTApi", # GUI object
-                    "chatGPTTransformers", # used with plugins; transform ChatGPT response message
-                    "predefinedContexts", # used with plugins; pre-defined contexts
-                    "inputSuggestions", # used with plugins; user input suggestions
+                    "mainWindow",  # main window object
+                    "chatGPTApi",  # GUI object
+                    "chatGPTTransformers",  # used with plugins; transform ChatGPT response message
+                    "predefinedContexts",  # used with plugins; pre-defined contexts
+                    "inputSuggestions",  # used with plugins; user input suggestions
                     "integrate_google_searches_signature",
-                    "chatGPTApiFunctionSignatures", # used with plugins; function calling
-                    "chatGPTApiAvailableFunctions", # used with plugins; function calling
-                    "pythonFunctionResponse", # used with plugins; function calling when function name is 'python'
+                    "chatGPTApiFunctionSignatures",  # used with plugins; function calling
+                    "chatGPTApiAvailableFunctions",  # used with plugins; function calling
+                    # used with plugins; function calling when function name is 'python'
+                    "pythonFunctionResponse",
                 )
                 if not name.startswith("__") and not name in excludeFromSavingList:
                     try:
                         value = eval(f"config.{name}")
-                        fileObj.write("{0} = {1}\n".format(name, pprint.pformat(value)))
+                        fileObj.write("{0} = {1}\n".format(
+                            name, pprint.pformat(value)))
                     except:
                         pass
 
@@ -1437,12 +1558,15 @@ if __name__ == '__main__':
     if thisOS == "Windows":
         myappid = "chatgpt.gui"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        windowsIconPath = os.path.abspath(os.path.join(sys.path[0], "icons", f"{appName}.ico"))
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(windowsIconPath)
+        windowsIconPath = os.path.abspath(
+            os.path.join(sys.path[0], "icons", f"{appName}.ico"))
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            windowsIconPath)
     # app
     qdarktheme.enable_hi_dpi()
     app = QApplication(sys.argv)
-    iconPath = os.path.abspath(os.path.join(sys.path[0], "icons", f"{appName}.png"))
+    iconPath = os.path.abspath(os.path.join(
+        sys.path[0], "icons", f"{appName}.png"))
     appIcon = QIcon(iconPath)
     app.setWindowIcon(appIcon)
     showMainWindow()
@@ -1496,16 +1620,20 @@ Name=ChatGPT GUI
             try:
                 # Try to copy the newly created .desktop file to:
                 from pathlib import Path
+
                 # ~/.local/share/applications
-                userAppDir = os.path.join(str(Path.home()), ".local", "share", "applications")
-                userAppDirShortcut = os.path.join(userAppDir, f"{appName}.desktop")
+                userAppDir = os.path.join(
+                    str(Path.home()), ".local", "share", "applications")
+                userAppDirShortcut = os.path.join(
+                    userAppDir, f"{appName}.desktop")
                 if not os.path.exists(userAppDirShortcut):
                     Path(userAppDir).mkdir(parents=True, exist_ok=True)
                     copyfile(ubaLinuxDesktopFile, userAppDirShortcut)
                 # ~/Desktop
                 homeDir = os.environ["HOME"]
                 desktopPath = f"{homeDir}/Desktop"
-                desktopPathShortcut = os.path.join(desktopPath, f"{appName}.desktop")
+                desktopPathShortcut = os.path.join(
+                    desktopPath, f"{appName}.desktop")
                 if os.path.isfile(desktopPath) and not os.path.isfile(desktopPathShortcut):
                     copyfile(ubaLinuxDesktopFile, desktopPathShortcut)
             except:
