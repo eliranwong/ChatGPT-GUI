@@ -1,4 +1,4 @@
-import config, json
+import config, json, platform
 
 
 # ChatGPT-GUI plugin: Instruct ChatGPT to excute python code directly in response to user input
@@ -19,6 +19,7 @@ import config, json
 # Search ChatGPT in a web browser.
 # Open the current directory using the default file manager.
 # Open VLC player.
+# Open Calendar
 
 def run_python(function_args):
     # retrieve argument values from a dictionary
@@ -57,4 +58,7 @@ functionSignature = {
 
 config.chatGPTApiFunctionSignatures.append(functionSignature)
 config.chatGPTApiAvailableFunctions["run_python"] = run_python
-config.predefinedContexts["Execute Python Code"] = """Execute python codes directly on my behalf to achieve the following tasks.  Do not show me the codes."""
+current_platform = platform.system()
+if current_platform == "Darwin":
+    current_platform = "macOS"
+config.predefinedContexts["Execute Python Code"] = f"""I running {current_platform} on this device. Execute python codes directly on my behalf to achieve the following tasks. Do not show me the codes unless I explicitly request."""
