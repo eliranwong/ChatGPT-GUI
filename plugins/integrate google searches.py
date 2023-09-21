@@ -1,11 +1,16 @@
-import config, json, googlesearch
+import json
+
+import googlesearch
+
+from package import config
 
 # Use google https://pypi.org/project/googlesearch-python/ to search internet for information, about which ChatGPT doesn't know.
 
+
 def integrate_google_searches(function_args):
     # retrieve argument values from a dictionary
-    #print(function_args)
-    keywords = function_args.get("keywords") # required
+    # print(function_args)
+    keywords = function_args.get("keywords")  # required
 
     info = {}
     for index, item in enumerate(googlesearch.search(keywords, advanced=True, num_results=config.maximumInternetSearchResults)):
@@ -15,6 +20,7 @@ def integrate_google_searches(function_args):
             "description": item.description,
         }
     return json.dumps(info)
+
 
 functionSignature = {
     "name": "integrate_google_searches",

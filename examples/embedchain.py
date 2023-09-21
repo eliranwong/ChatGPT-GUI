@@ -2,9 +2,13 @@
 This example uses embedchain to search for keywords with google and write a summary.
 """
 
+import os
+
+import googlesearch
 from embedchain import App
-import googlesearch, config, os
 from embedchain.config import LlmConfig
+
+from package import config
 
 os.environ["OPENAI_API_KEY"] = config.openaiApiKey
 
@@ -22,5 +26,6 @@ for i in googlesearch.search(searchInput):
 
 # Query the bot
 query_config = LlmConfig(max_tokens=config.chatGPTApiMaxTokens)
-answer = search_bot.query(f"Write a summary about {searchInput}", config=query_config)
+answer = search_bot.query(
+    f"Write a summary about {searchInput}", config=query_config)
 print(answer)

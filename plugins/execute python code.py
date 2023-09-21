@@ -1,4 +1,5 @@
-import config, json, platform, re
+import json
+from package import config
 
 
 # ChatGPT-GUI plugin: Instruct ChatGPT to excute python code directly in response to user input

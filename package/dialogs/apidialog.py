@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter,
                                QSplitter, QSystemTrayIcon, QVBoxLayout,
                                QWidget)
 
-import config
+from package import config
 
 
 class ApiDialog(QDialog):

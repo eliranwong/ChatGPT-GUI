@@ -1,6 +1,7 @@
-import config, openai, re
+import openai, re
 from datetime import datetime
 
+from package import config
 
 """
 A plugin example to generate multiple chat responses and save in database file.

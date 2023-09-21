@@ -1,4 +1,5 @@
-import config, json
+import json
+from package import config
 
 
 # modified from source: https://platform.openai.com/docs/guides/gpt/function-calling
