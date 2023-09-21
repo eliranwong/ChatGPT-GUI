@@ -26,8 +26,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter,
                                QSplitter, QSystemTrayIcon, QVBoxLayout,
                                QWidget)
 
-import config
-from package import isPocketsphinxInstalled
+from package import CHATS_PATH, PLUGINS_PATH, config, isPocketsphinxInstalled
 from package.database import Database
 from package.dialogs.apidialog import ApiDialog
 from package.speech import SpeechRecognitionThread
@@ -63,7 +62,7 @@ class ChatGPTAPI(QWidget):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         filePath, _ = QFileDialog.getOpenFileName(self, "Open Database", os.path.join(
-            wd, "chats", "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
+            CHATS_PATH, "default.chat"), "ChatGPT-GUI Database (*.chat)", options=options)
 
         # If the user selects a file path, open the file
         self.database = Database(filePath)
@@ -428,6 +427,7 @@ class ChatGPTAPI(QWidget):
 
     def updateApiModel(self, index):
         self.apiModel = index
+#
 
     def updateTemperature(self, index):
         config.chatGPTApiTemperature = float(index / 10)
@@ -597,7 +597,6 @@ class ChatGPTAPI(QWidget):
         currentSelectedText = self.contentView.textCursor().selectedText().strip()
         if currentSelectedText:
             self.newData()
-            self.userInput.setText(currentSelectedText)
             self.sendMessage()
 
     def newData(self):
@@ -869,7 +868,7 @@ Follow the following steps:
         config.chatGPTApiFunctionSignatures = []
         config.chatGPTApiAvailableFunctions = {}
 
-        pluginFolder = os.path.join(os.getcwd(), "plugins")
+        pluginFolder = PLUGINS_PATH
         # always run 'integrate google searches'
         internetSeraches = "integrate google searches"
         script = os.path.join(pluginFolder, "{0}.py".format(internetSeraches))

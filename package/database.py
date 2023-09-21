@@ -2,7 +2,7 @@ import os
 import re
 import sqlite3
 
-import config
+from package import CHATS_PATH, config
 
 thisFile = os.path.realpath(__file__)
 wd = os.path.dirname(thisFile)
@@ -14,8 +14,8 @@ class Database:
             reg = re.compile(expr, flags=re.IGNORECASE)
             return reg.search(item) is not None
         defaultFilePath = config.chatGPTApiLastChatDatabase if config.chatGPTApiLastChatDatabase and os.path.isfile(
-            config.chatGPTApiLastChatDatabase) else os.path.join(wd, "chats", "default.chat")
-        self.filePath = filePath if filePath else defaultFilePath
+            config.chatGPTApiLastChatDatabase) else os.path.join(CHATS_PATH, "default.chat")
+        self.filePath = filePath or defaultFilePath
         self.connection = sqlite3.connect(self.filePath)
         self.connection.create_function("REGEXP", 2, regexp)
         self.cursor = self.connection.cursor()

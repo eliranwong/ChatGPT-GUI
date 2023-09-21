@@ -9,8 +9,8 @@ from shutil import copyfile
 import qdarktheme
 from gtts import gTTS
 
-import config
-from configDefault import *
+from package import CONFIG_PATH, config
+# from package.configDefault import *
 from package.mainwindow import MainWindow
 from package.util.Worker import ChatGPTResponse, OpenAIImage
 
@@ -18,8 +18,9 @@ thisFile = os.path.realpath(__file__)
 wd = os.path.dirname(thisFile)
 if os.getcwd() != wd:
     os.chdir(wd)
-if not os.path.isfile("config.py"):
-    open("config.py", "a", encoding="utf-8").close()
+
+if not os.path.isfile(CONFIG_PATH):
+    open(CONFIG_PATH, "a", encoding="utf-8").close()
 
 try:
     from pocketsphinx import LiveSpeech, get_model_path
@@ -63,7 +64,7 @@ def showMainWindow():
 
 
 def aboutToQuit():
-    with open("config.py", "w", encoding="utf-8") as fileObj:
+    with open(CONFIG_PATH, "w", encoding="utf-8") as fileObj:
         for name in dir(config):
             excludeFromSavingList = (
                 "mainWindow",  # main window object
@@ -76,6 +77,7 @@ def aboutToQuit():
                 "chatGPTApiAvailableFunctions",  # used with plugins; function calling
                 # used with plugins; function calling when function name is 'python'
                 "pythonFunctionResponse",
+                "load_config"
             )
             if not name.startswith("__") and not name in excludeFromSavingList:
                 try:
@@ -196,4 +198,4 @@ def run():
         trayMenu.addAction(quitAppAction)
         tray.setContextMenu(trayMenu)
 
-        sys.exit(app.exec() if config.qtLibrary == "pyside6" else app.exec_())
+    app.exec() if config.qtLibrary == "pyside6" else app.exec_()

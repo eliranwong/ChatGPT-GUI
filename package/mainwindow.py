@@ -17,8 +17,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter,
                                QSplitter, QSystemTrayIcon, QVBoxLayout,
                                QWidget)
 
-import config
-from configDefault import *
+from package import PLUGINS_PATH, config
 from package.chatgptapi import ChatGPTAPI
 
 
@@ -148,7 +147,7 @@ class MainWindow(QMainWindow):
         # Create a plugin menu
         plugin_menu = menubar.addMenu(config.thisTranslation["plugins"])
 
-        pluginFolder = os.path.join(os.getcwd(), "plugins")
+        pluginFolder = PLUGINS_PATH 
         for index, plugin in enumerate(self.fileNamesWithoutExtension(pluginFolder, "py")):
             new_action = QAction(plugin, self)
             new_action.setCheckable(True)
