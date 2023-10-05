@@ -1,4 +1,4 @@
-import config, sys, traceback, openai, os, json, traceback
+import config, sys, traceback, openai, os, json, traceback, re
 if config.qtLibrary == "pyside6":
     from PySide6.QtCore import QRunnable, Slot, Signal, QObject, QThreadPool
 else:
