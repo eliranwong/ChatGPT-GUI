@@ -1,8 +1,21 @@
-import config, sys, traceback, openai, os, json, traceback, re, textwrap
+import json
+import os
+import sys
+import traceback
+import typing
+from typing import TYPE_CHECKING
+
+import openai
+
+from package import config
+
+if TYPE_CHECKING:
+    from package.chatgptapi import ChatGPTAPI
+
 if config.qtLibrary == "pyside6":
-    from PySide6.QtCore import QRunnable, Slot, Signal, QObject, QThreadPool
+    from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 else:
-    from qtpy.QtCore import QRunnable, Slot, Signal, QObject, QThreadPool
+    from qtpy.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 
 
 class WorkerSignals(QObject):
@@ -63,7 +76,7 @@ class Worker(QRunnable):
         '''
 
         # assign a reference to this current thread
-        #config.workerThread = QThread.currentThread()
+        # config.workerThread = QThread.currentThread()
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
@@ -73,14 +86,14 @@ class Worker(QRunnable):
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
-            self.signals.result.emit(result)  # Return the result of the processing
+            # Return the result of the processing
+            self.signals.result.emit(result)
         finally:
             self.signals.finished.emit()  # Done
 
 
 class ChatGPTResponse:
-
-    def __init__(self, parent):
+    def __init__(self, parent: 'ChatGPTAPI'):
         super().__init__()
         self.parent = parent
         self.threadpool = QThreadPool()
@@ -215,7 +228,7 @@ class ChatGPTResponse:
     def getResponse(self, messages, progress_callback, functionJustCalled=False):
         responses = ""
         if config.loadingInternetSearches == "always" and not functionJustCalled:
-            #print("loading internet searches ...")
+            # print("loading internet searches ...")
             try:
                 completion = openai.ChatCompletion.create(
                     model=config.chatGPTApiModel,
@@ -228,10 +241,13 @@ class ChatGPTResponse:
                 )
                 response_message = completion["choices"][0]["message"]
                 if response_message.get("function_call"):
-                    function_args = json.loads(response_message["function_call"]["arguments"])
-                    fuction_to_call = config.chatGPTApiAvailableFunctions.get("integrate_google_searches")
+                    function_args = json.loads(
+                        response_message["function_call"]["arguments"])
+                    fuction_to_call = config.chatGPTApiAvailableFunctions.get(
+                        "integrate_google_searches")
                     function_response = fuction_to_call(function_args)
-                    messages.append(response_message) # extend conversation with assistant's reply
+                    # extend conversation with assistant's reply
+                    messages.append(response_message)
                     messages.append(
                         {
                             "role": "function",
@@ -242,21 +258,29 @@ class ChatGPTResponse:
             except:
                 print("Unable to load internet resources.")
         try:
-            if config.chatGPTApiNoOfChoices == 1:
-                completion = self.runCompletion(messages, progress_callback)
-                if completion is not None:
-                    progress_callback.emit("\n\n~~~ ")
-                    for event in completion:
-                        # stop generating response
-                        stop_file = ".stop_chatgpt"
-                        if os.path.isfile(stop_file):
-                            os.remove(stop_file)
-                            break                                    
-                        # RETRIEVE THE TEXT FROM THE RESPONSE
-                        event_text = event["choices"][0]["delta"] # EVENT DELTA RESPONSE
-                        progress = event_text.get("content", "") # RETRIEVE CONTENT
-                        # STREAM THE ANSWER
-                        progress_callback.emit(progress)
+            if config.chatGPTApiNoOfChoices == 1 and (config.chatGPTApiFunctionCall == "none" or not config.chatGPTApiFunctionSignatures or functionJustCalled):
+                completion = openai.ChatCompletion.create(
+                    model=config.chatGPTApiModel,
+                    messages=messages,
+                    max_tokens=config.chatGPTApiMaxTokens,
+                    temperature=config.chatGPTApiTemperature,
+                    n=config.chatGPTApiNoOfChoices,
+                    stream=True,
+                )
+                progress_callback.emit("\n\n~~~ ")
+                for event in completion:
+                    # stop generating response
+                    stop_file = ".stop_chatgpt"
+                    if os.path.isfile(stop_file):
+                        os.remove(stop_file)
+                        break
+                    # RETRIEVE THE TEXT FROM THE RESPONSE
+                    # EVENT DELTA RESPONSE
+                    event_text = event["choices"][0]["delta"]
+                    progress = event_text.get(
+                        "content", "")  # RETRIEVE CONTENT
+                    # STREAM THE ANSWER
+                    progress_callback.emit(progress)
             else:
                 if config.chatGPTApiFunctionSignatures:
                     completion = openai.ChatCompletion.create(
@@ -266,7 +290,8 @@ class ChatGPTResponse:
                         temperature=0.0 if config.chatGPTApiPredefinedContext == "Execute Python Code" else config.chatGPTApiTemperature,
                         n=config.chatGPTApiNoOfChoices,
                         functions=config.chatGPTApiFunctionSignatures,
-                        function_call={"name": "run_python"} if config.chatGPTApiPredefinedContext == "Execute Python Code" else config.chatGPTApiFunctionCall,
+                        function_call={
+                            "name": "run_python"} if config.chatGPTApiPredefinedContext == "Execute Python Code" else config.chatGPTApiFunctionCall,
                     )
                 else:
                     completion = openai.ChatCompletion.create(
@@ -283,7 +308,7 @@ class ChatGPTResponse:
                     if function_name == "python":
                         config.pythonFunctionResponse = ""
                         function_args = response_message["function_call"]["arguments"]
-                        insert_string = "import config\nconfig.pythonFunctionResponse = "
+                        insert_string = "from package import config\nconfig.pythonFunctionResponse = "
                         if "\n" in function_args:
                             substrings = function_args.rsplit("\n", 1)
                             new_function_args = f"{substrings[0]}\n{insert_string}{substrings[-1]}"
@@ -291,29 +316,33 @@ class ChatGPTResponse:
                             new_function_args = f"{insert_string}{function_args}"
                         try:
                             exec(new_function_args, globals())
-                            function_response = str(config.pythonFunctionResponse)
+                            function_response = str(
+                                config.pythonFunctionResponse)
                         except:
                             function_response = function_args
                         info = {"information": function_response}
                         function_response = json.dumps(info)
                     else:
-                        #if not function_name in config.chatGPTApiAvailableFunctions:
+                        # if not function_name in config.chatGPTApiAvailableFunctions:
                         #    print("unexpected function name: ", function_name)
-                        fuction_to_call = config.chatGPTApiAvailableFunctions.get(function_name, "integrate_google_searches")
+                        fuction_to_call = config.chatGPTApiAvailableFunctions.get(
+                            function_name, "integrate_google_searches")
                         try:
-                            function_args = json.loads(response_message["function_call"]["arguments"])
+                            function_args = json.loads(
+                                response_message["function_call"]["arguments"])
                         except:
                             function_args = response_message["function_call"]["arguments"]
                             if function_name == "integrate_google_searches":
                                 function_args = {"keywords": function_args}
                         function_response = fuction_to_call(function_args)
-                    
+
                     # check function response
                     # print("Got this function response:", function_response)
 
                     # process function response
                     # send the info on the function call and function response to GPT
-                    messages.append(response_message) # extend conversation with assistant's reply
+                    # extend conversation with assistant's reply
+                    messages.append(response_message)
                     messages.append(
                         {
                             "role": "function",
@@ -336,26 +365,27 @@ class ChatGPTResponse:
                         responses += f"{chat_response}\n\n"
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:
-            #Handle API error here, e.g. retry or log
+            # Handle API error here, e.g. retry or log
             return f"OpenAI API returned an API Error: {e}"
         except openai.error.APIConnectionError as e:
-            #Handle connection error here
+            # Handle connection error here
             return f"Failed to connect to OpenAI API: {e}"
         except openai.error.RateLimitError as e:
-            #Handle rate limit error (we recommend using exponential backoff)
+            # Handle rate limit error (we recommend using exponential backoff)
             return f"OpenAI API request exceeded rate limit: {e}"
         except:
-            #traceback.print_exc()
+            # traceback.print_exc()
             responses = traceback.format_exc()
         return responses
 
     def workOnGetResponse(self, messages):
         # Pass the function to execute
-        worker = Worker(self.getResponse, messages) # Any other args, kwargs are passed to the run function
+        # Any other args, kwargs are passed to the run function
+        worker = Worker(self.getResponse, messages)
         worker.signals.result.connect(self.parent.processResponse)
         worker.signals.progress.connect(self.parent.printStream)
         # Connection
-        #worker.signals.finished.connect(None)
+        # worker.signals.finished.connect(None)
         # Execute
         self.threadpool.start(worker)
 
@@ -369,7 +399,7 @@ class OpenAIImage:
 
     def getResponse(self, prompt, progress_callback=None):
         try:
-            #https://platform.openai.com/docs/guides/images/introduction
+            # https://platform.openai.com/docs/guides/images/introduction
             response = openai.Image.create(
                 prompt=prompt,
                 n=1,
@@ -378,13 +408,13 @@ class OpenAIImage:
             return response['data'][0]['url']
         # error codes: https://platform.openai.com/docs/guides/error-codes/python-library-error-types
         except openai.error.APIError as e:
-            #Handle API error here, e.g. retry or log
+            # Handle API error here, e.g. retry or log
             print(f"OpenAI API returned an API Error: {e}")
         except openai.error.APIConnectionError as e:
-            #Handle connection error here
+            # Handle connection error here
             print(f"Failed to connect to OpenAI API: {e}")
         except openai.error.RateLimitError as e:
-            #Handle rate limit error (we recommend using exponential backoff)
+            # Handle rate limit error (we recommend using exponential backoff)
             print(f"OpenAI API request exceeded rate limit: {e}")
         except:
             traceback.print_exc()
@@ -392,9 +422,10 @@ class OpenAIImage:
 
     def workOnGetResponse(self, prompt):
         # Pass the function to execute
-        worker = Worker(self.getResponse, prompt) # Any other args, kwargs are passed to the run function
+        # Any other args, kwargs are passed to the run function
+        worker = Worker(self.getResponse, prompt)
         worker.signals.result.connect(self.parent.displayImage)
         # Connection
-        #worker.signals.finished.connect(None)
+        # worker.signals.finished.connect(None)
         # Execute
         self.threadpool.start(worker)

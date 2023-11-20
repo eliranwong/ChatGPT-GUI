@@ -1,4 +1,5 @@
-import config, json, platform, re
+import json
+from package import config
 
 
 # ChatGPT-GUI plugin: Instruct ChatGPT to excute python code directly in response to user input
@@ -24,7 +25,7 @@ import config, json, platform, re
 def run_python(function_args):
 
     def fineTunePythonCode(code):
-        insert_string = "import config\nconfig.pythonFunctionResponse = "
+        insert_string = "from package import config\nconfig.pythonFunctionResponse = "
         code = re.sub("^!(.*?)$", r"import os\nos.system(\1)", code, flags=re.M)
         if "\n" in code:
             substrings = code.rsplit("\n", 1)
