@@ -25,7 +25,7 @@ from package import config
 def run_python(function_args):
 
     def fineTunePythonCode(code):
-        insert_string = "import config\nconfig.pythonFunctionResponse = "
+        insert_string = "from package import config\nconfig.pythonFunctionResponse = "
         code = re.sub("^!(.*?)$", r"import os\nos.system(\1)", code, flags=re.M)
         if "\n" in code:
             substrings = code.rsplit("\n", 1)
